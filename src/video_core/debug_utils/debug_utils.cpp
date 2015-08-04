@@ -17,13 +17,15 @@
 #include <nihstro/shader_binary.h>
 
 #include "common/assert.h"
+#include "common/color.h"
 #include "common/file_util.h"
 #include "common/math_util.h"
+#include "common/vector_math.h"
 
-#include "video_core/color.h"
-#include "video_core/math.h"
 #include "video_core/pica.h"
+#include "video_core/renderer_base.h"
 #include "video_core/utils.h"
+#include "video_core/video_core.h"
 
 #include "debug_utils.h"
 
@@ -39,6 +41,9 @@ void DebugContext::OnEvent(Event event, void* data) {
 
     {
         std::unique_lock<std::mutex> lock(breakpoint_mutex);
+
+        // Commit the hardware renderer's framebuffer so it will show on debug widgets
+        VideoCore::g_renderer->hw_rasterizer->CommitFramebuffer();
 
         // TODO: Should stop the CPU thread here once we multithread emulation.
 
@@ -80,15 +85,11 @@ void GeometryDumper::AddTriangle(Vertex& v0, Vertex& v1, Vertex& v2) {
     vertices.push_back(v1);
     vertices.push_back(v2);
 
-    int num_vertices = vertices.size();
+    int num_vertices = (int)vertices.size();
     faces.push_back({ num_vertices-3, num_vertices-2, num_vertices-1 });
 }
 
 void GeometryDumper::Dump() {
-    // NOTE: Permanently enabling this just trashes the hard disk for no reason.
-    //       Hence, this is currently disabled.
-    return;
-
     static int index = 0;
     std::string filename = std::string("geometry_dump") + std::to_string(++index) + ".obj";
 
@@ -111,10 +112,6 @@ void GeometryDumper::Dump() {
 void DumpShader(const u32* binary_data, u32 binary_size, const u32* swizzle_data, u32 swizzle_size,
                 u32 main_offset, const Regs::VSOutputAttributes* output_attributes)
 {
-    // NOTE: Permanently enabling this just trashes hard disks for no reason.
-    //       Hence, this is currently disabled.
-    return;
-
     struct StuffToWrite {
         u8* pointer;
         u32 size;
@@ -236,8 +233,8 @@ void DumpShader(const u32* binary_data, u32 binary_size, const u32* swizzle_data
 
     dvle.main_offset_words = main_offset;
     dvle.output_register_table_offset = write_offset - dvlb.dvle_offset;
-    dvle.output_register_table_size = output_info_table.size();
-    QueueForWriting((u8*)output_info_table.data(), output_info_table.size() * sizeof(OutputRegisterInfo));
+    dvle.output_register_table_size = static_cast<uint32_t>(output_info_table.size());
+    QueueForWriting((u8*)output_info_table.data(), static_cast<u32>(output_info_table.size() * sizeof(OutputRegisterInfo)));
 
     // TODO: Create a label table for "main"
 
@@ -315,7 +312,7 @@ const Math::Vec4<u8> LookupTexture(const u8* source, int x, int y, const Texture
         // TODO(neobrain): Fix code design to unify vertical block offsets!
         source += coarse_y * info.stride;
     }
-    
+
     // TODO: Assert that width/height are multiples of block dimensions
 
     switch (info.format) {
@@ -391,6 +388,17 @@ const Math::Vec4<u8> LookupTexture(const u8* source, int x, int y, const Texture
         } else {
             return { i, i, i, a };
         }
+    }
+
+    case Regs::TextureFormat::I4:
+    {
+        u32 morton_offset = VideoCore::GetMortonOffset(x, y, 1);
+        const u8* source_ptr = source + morton_offset / 2;
+
+        u8 i = (morton_offset % 2) ? ((*source_ptr & 0xF0) >> 4) : (*source_ptr & 0xF);
+        i = Color::Convert4To8(i);
+
+        return { i, i, i, 255 };
     }
 
     case Regs::TextureFormat::A4:
@@ -481,33 +489,33 @@ const Math::Vec4<u8> LookupTexture(const u8* source, int x, int y, const Texture
                 // Lookup base value
                 Math::Vec3<int> ret;
                 if (differential_mode) {
-                    ret.r() = differential.r;
-                    ret.g() = differential.g;
-                    ret.b() = differential.b;
+                    ret.r() = static_cast<int>(differential.r);
+                    ret.g() = static_cast<int>(differential.g);
+                    ret.b() = static_cast<int>(differential.b);
                     if (x >= 2) {
-                        ret.r() += differential.dr;
-                        ret.g() += differential.dg;
-                        ret.b() += differential.db;
+                        ret.r() += static_cast<int>(differential.dr);
+                        ret.g() += static_cast<int>(differential.dg);
+                        ret.b() += static_cast<int>(differential.db);
                     }
                     ret.r() = Color::Convert5To8(ret.r());
                     ret.g() = Color::Convert5To8(ret.g());
                     ret.b() = Color::Convert5To8(ret.b());
                 } else {
                     if (x < 2) {
-                        ret.r() = Color::Convert4To8(separate.r1);
-                        ret.g() = Color::Convert4To8(separate.g1);
-                        ret.b() = Color::Convert4To8(separate.b1);
+                        ret.r() = Color::Convert4To8(static_cast<u8>(separate.r1));
+                        ret.g() = Color::Convert4To8(static_cast<u8>(separate.g1));
+                        ret.b() = Color::Convert4To8(static_cast<u8>(separate.b1));
                     } else {
-                        ret.r() = Color::Convert4To8(separate.r2);
-                        ret.g() = Color::Convert4To8(separate.g2);
-                        ret.b() = Color::Convert4To8(separate.b2);
+                        ret.r() = Color::Convert4To8(static_cast<u8>(separate.r2));
+                        ret.g() = Color::Convert4To8(static_cast<u8>(separate.g2));
+                        ret.b() = Color::Convert4To8(static_cast<u8>(separate.b2));
                     }
                 }
 
                 // Add modifier
-                unsigned table_index = (x < 2) ? table_index_1.Value() : table_index_2.Value();
+                unsigned table_index = static_cast<int>((x < 2) ? table_index_1.Value() : table_index_2.Value());
 
-                static const auto etc1_modifier_table = std::array<std::array<u8, 2>, 8>{{
+                static const std::array<std::array<u8, 2>, 8> etc1_modifier_table = {{
                     {  2,  8 }, {  5, 17 }, {  9,  29 }, { 13,  42 },
                     { 18, 60 }, { 24, 80 }, { 33, 106 }, { 47, 183 }
                 }};
@@ -549,10 +557,6 @@ TextureInfo TextureInfo::FromPicaRegister(const Regs::TextureConfig& config,
 }
 
 void DumpTexture(const Pica::Regs::TextureConfig& texture_config, u8* data) {
-    // NOTE: Permanently enabling this just trashes hard disks for no reason.
-    //       Hence, this is currently disabled.
-    return;
-
 #ifndef HAVE_PNG
     return;
 #else
@@ -617,7 +621,7 @@ void DumpTexture(const Pica::Regs::TextureConfig& texture_config, u8* data) {
             info.width = texture_config.width;
             info.height = texture_config.height;
             info.stride = row_stride;
-            info.format = registers.texture0_format;
+            info.format = g_state.regs.texture0_format;
             Math::Vec4<u8> texture_color = LookupTexture(data, x, y, info);
             buf[3 * x + y * row_stride    ] = texture_color.r();
             buf[3 * x + y * row_stride + 1] = texture_color.g();

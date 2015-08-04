@@ -12,8 +12,8 @@
 #include "common/common_types.h"
 
 #include "core/core.h"
-#include "core/mem_map.h"
 
+#include "core/hle/hle.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/result.h"
 
@@ -45,6 +45,7 @@ enum ThreadStatus {
 namespace Kernel {
 
 class Mutex;
+class Process;
 
 class Thread final : public WaitObject {
 public:
@@ -72,12 +73,6 @@ public:
     void Acquire() override;
 
     /**
-     * Checks if the thread is an idle (stub) thread
-     * @return True if the thread is an idle (stub) thread, false otherwise
-     */
-    inline bool IsIdle() const { return idle; }
-
-    /**
      * Gets the thread's current priority
      * @return The current thread's priority
      */
@@ -100,12 +95,6 @@ public:
      * @return The thread's ID
      */
     u32 GetThreadId() const { return thread_id; }
-    
-    /**
-     * Release an acquired wait object
-     * @param wait_object WaitObject to release
-     */
-    void ReleaseWaitObject(WaitObject* wait_object);
 
     /**
      * Resumes a thread from waiting
@@ -135,6 +124,12 @@ public:
      */
     void Stop();
 
+    /*
+     * Returns the Thread Local Storage address of the current thread
+     * @returns VAddr of the thread's TLS
+     */
+    VAddr GetTLSAddress() const;
+
     Core::ThreadContext context;
 
     u32 thread_id;
@@ -150,9 +145,14 @@ public:
 
     s32 processor_id;
 
+    s32 tls_index; ///< Index of the Thread Local Storage of the thread
+
+    bool waitsynch_waited; ///< Set to true if the last svcWaitSynch call caused the thread to wait
+
     /// Mutexes currently held by this thread, which will be released when it exits.
     boost::container::flat_set<SharedPtr<Mutex>> held_mutexes;
 
+    SharedPtr<Process> owner_process; ///< Process that owns this thread
     std::vector<SharedPtr<WaitObject>> wait_objects; ///< Objects that the thread is waiting on
     VAddr wait_address;     ///< If waiting on an AddressArbiter, this is the arbitration address
     bool wait_all;          ///< True if the thread is waiting on all objects before resuming
@@ -160,27 +160,21 @@ public:
 
     std::string name;
 
-    /// Whether this thread is intended to never actually be executed, i.e. always idle
-    bool idle = false;
+    /// Handle used as userdata to reference this object when inserting into the CoreTiming queue.
+    Handle callback_handle;
 
 private:
     Thread();
     ~Thread() override;
-
-    /// Handle used as userdata to reference this object when inserting into the CoreTiming queue.
-    Handle callback_handle;
 };
-
-extern SharedPtr<Thread> g_main_thread;
 
 /**
  * Sets up the primary application thread
- * @param stack_size The size of the thread's stack
  * @param entry_point The address at which the thread should start execution
  * @param priority The priority to give the main thread
  * @return A shared pointer to the main thread
  */
-SharedPtr<Thread> SetupMainThread(u32 stack_size, u32 entry_point, s32 priority);
+SharedPtr<Thread> SetupMainThread(u32 entry_point, s32 priority);
 
 /**
  * Reschedules to the next available thread (call after current thread is suspended)
@@ -222,14 +216,6 @@ void WaitCurrentThread_WaitSynchronization(std::vector<SharedPtr<WaitObject>> wa
  * @param wait_address Arbitration address used to resume from wait
  */
 void WaitCurrentThread_ArbitrateAddress(VAddr wait_address);
-
-/**
- * Sets up the idle thread, this is a thread that is intended to never execute instructions,
- * only to advance the timing. It is scheduled when there are no other ready threads in the thread queue
- * and will try to yield on every call.
- * @return The handle of the idle thread
- */
-SharedPtr<Thread> SetupIdleThread();
 
 /**
  * Initialize threading

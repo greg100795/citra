@@ -3,12 +3,12 @@
 // Refer to the license.txt file included.
 
 #include <atomic>
-#include <cstdio>
 #include <mutex>
 #include <vector>
 
-#include "common/assert.h"
 #include "common/chunk_file.h"
+#include "common/logging/log.h"
+#include "common/string_util.h"
 
 #include "core/arm/arm_interface.h"
 #include "core/core.h"
@@ -160,6 +160,16 @@ void Init() {
     last_global_time_us = 0;
     has_ts_events = 0;
     mhz_change_callbacks.clear();
+
+    first = nullptr;
+    ts_first = nullptr;
+    ts_last = nullptr;
+
+    event_pool = nullptr;
+    event_ts_pool = nullptr;
+    allocated_ts_events = 0;
+
+    advance_callback = nullptr;
 }
 
 void Shutdown() {
@@ -492,7 +502,7 @@ void Advance() {
         Core::g_app_core->down_count += diff;
     }
     if (advance_callback)
-        advance_callback(cycles_executed);
+        advance_callback(static_cast<int>(cycles_executed));
 }
 
 void LogPendingEvents() {
@@ -539,7 +549,7 @@ std::string GetScheduledEventsSummary() {
         const char* name = event_types[event->type].name;
         if (!name)
             name = "[unknown]";
-        text += Common::StringFromFormat("%s : %i %08x%08x\n", name, (int)event->time, 
+        text += Common::StringFromFormat("%s : %i %08x%08x\n", name, (int)event->time,
                 (u32)(event->userdata >> 32), (u32)(event->userdata));
         event = event->next;
     }

@@ -4,24 +4,18 @@
 
 #pragma once
 
-#include <boost/intrusive_ptr.hpp>
+#include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <string>
 #include <vector>
 
-#include "common/common.h"
+#include "common/common_types.h"
+
+#include "core/hle/hle.h"
 #include "core/hle/result.h"
-
-typedef u32 Handle;
-typedef s32 Result;
-
-// TODO: It would be nice to eventually replace these with strong types that prevent accidental
-// conversion between each other.
-typedef u32 VAddr; ///< Represents a pointer in the userspace virtual address space.
-typedef u32 PAddr; ///< Represents a pointer in the ARM11 physical address space.
-
-const Handle INVALID_HANDLE = 0;
 
 namespace Kernel {
 
@@ -51,7 +45,9 @@ enum class HandleType : u32 {
     Process         = 8,
     AddressArbiter  = 9,
     Semaphore       = 10,
-    Timer           = 11
+    Timer           = 11,
+    ResourceLimit   = 12,
+    CodeSet         = 13,
 };
 
 enum {
@@ -89,17 +85,18 @@ public:
         case HandleType::Redirection:
         case HandleType::Process:
         case HandleType::AddressArbiter:
+        case HandleType::ResourceLimit:
+        case HandleType::CodeSet:
             return false;
         }
-
-        return false;
     }
+
+public:
+    static unsigned int next_object_id;
 
 private:
     friend void intrusive_ptr_add_ref(Object*);
     friend void intrusive_ptr_release(Object*);
-
-    static unsigned int next_object_id;
 
     unsigned int ref_count = 0;
     unsigned int object_id = next_object_id++;
@@ -143,12 +140,6 @@ public:
      * @param thread Pointer to thread to remove
      */
     void RemoveWaitingThread(Thread* thread);
-
-    /**
-     * Wake up the next thread waiting on this object
-     * @return Pointer to the thread that was resumed, nullptr if no threads are waiting
-     */
-    SharedPtr<Thread> WakeupNextThread();
 
     /// Wake up all threads waiting on this object
     void WakeupAllWaitingThreads();
@@ -277,23 +268,10 @@ private:
 
 extern HandleTable g_handle_table;
 
-/// The ID code of the currently running game
-/// TODO(Subv): This variable should not be here, 
-/// we need a way to store information about the currently loaded application 
-/// for later query during runtime, maybe using the LDR service?
-extern u64 g_program_id;
-
 /// Initialize the kernel
 void Init();
 
 /// Shutdown the kernel
 void Shutdown();
-
-/**
- * Loads executable stored at specified address
- * @entry_point Entry point in memory of loaded executable
- * @return True on success, otherwise false
- */
-bool LoadExec(u32 entry_point);
 
 } // namespace

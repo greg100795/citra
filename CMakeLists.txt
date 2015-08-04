@@ -4,33 +4,51 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(citra)
 
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
+    message(STATUS "Copying pre-commit hook")
+    file(COPY hooks/pre-commit
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks)
+endif()
+
 if (NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-attributes -pthread")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 else()
-    # Silence deprecation warnings
-    add_definitions(/D_CRT_SECURE_NO_WARNINGS)
+    # Silence "deprecation" warnings
+    add_definitions(/D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_DEPRECATE)
+    # Avoid windows.h junk
+    add_definitions(/DNOMINMAX)
+
     # set up output paths for executable binaries (.exe-files, and .dll-files on DLL-capable platforms)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE STRING "" FORCE)
 
     # Tweak optimization settings
     # As far as I can tell, there's no way to override the CMake defaults while leaving user
     # changes intact, so we'll just clobber everything and say sorry.
     message(STATUS "Cache compiler flags ignored, please edit CMakeLists.txt to change the flags.")
+
+    # /W3 - Level 3 warnings
     # /MP - Multi-threaded compilation
-    # /MD - Multi-threaded runtime
-    # /Ox - Full optimization
-    # /Oy- - Don't omit frame pointer
-    # /GR- - Disable RTTI
-    # /GS- - No stack buffer overflow checks
-    # /EHsc - C++-only exception handling semantics
-    set(optimization_flags "/MP /MD /Ox /Oy- /GR- /GS- /EHsc")
     # /Zi - Output debugging information
     # /Zo - enahnced debug info for optimized builds
-    set(CMAKE_C_FLAGS_RELEASE   "${optimization_flags} /Zi" CACHE STRING "" FORCE)
-    set(CMAKE_CXX_FLAGS_RELEASE "${optimization_flags} /Zi" CACHE STRING "" FORCE)
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${optimization_flags} /Zi /Zo" CACHE STRING "" FORCE)
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${optimization_flags} /Zi /Zo" CACHE STRING "" FORCE)
+    set(CMAKE_C_FLAGS   "/W3 /MP /Zi /Zo" CACHE STRING "" FORCE)
+    # /GR- - Disable RTTI
+    # /EHsc - C++-only exception handling semantics
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} /GR- /EHsc" CACHE STRING "" FORCE)
+
+    # /MDd - Multi-threaded Debug Runtime DLL
+    set(CMAKE_C_FLAGS_DEBUG   "/Od /MDd" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}" CACHE STRING "" FORCE)
+
+    # /O2 - Optimization level 2
+    # /GS- - No stack buffer overflow checks
+    # /MD - Multi-threaded runtime DLL
+    set(CMAKE_C_FLAGS_RELEASE   "/O2 /GS- /MD" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" CACHE STRING "" FORCE)
+
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "/DEBUG" CACHE STRING "" FORCE)
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/DEBUG /INCREMENTAL:NO /OPT:REF,ICF" CACHE STRING "" FORCE)
 endif()
 
 add_definitions(-DSINGLETHREADED)
@@ -97,7 +115,7 @@ if (ENABLE_GLFW)
             set(TMP_TOOLSET "mingw-${TMP_ARCH}")
         endif()
 
-        set(GLFW_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/externals/glfw-3.0.4.bin")
+        set(GLFW_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/externals/glfw-3.1.1.bin")
         set(GLFW_INCLUDE_DIRS "${GLFW_PREFIX}/include" CACHE PATH "Path to GLFW3 headers")
         set(GLFW_LIBRARY_DIRS "${GLFW_PREFIX}/lib-${TMP_TOOLSET}" CACHE PATH "Path to GLFW3 libraries")
 
@@ -120,7 +138,7 @@ IF (APPLE)
     FIND_LIBRARY(IOKIT_LIBRARY IOKit)           # GLFW dependency
     FIND_LIBRARY(COREVIDEO_LIBRARY CoreVideo)   # GLFW dependency
     set(PLATFORM_LIBRARIES iconv ${COCOA_LIBRARY} ${IOKIT_LIBRARY} ${COREVIDEO_LIBRARY})
-    
+
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
 ELSEIF(MINGW)
@@ -184,9 +202,26 @@ add_subdirectory(${INI_PREFIX})
 
 include_directories(externals/nihstro/include)
 
+if (MSVC)
+    add_subdirectory(externals/getopt)
+endif()
+
 # process subdirectories
 if(ENABLE_QT)
     include_directories(externals/qhexedit)
     add_subdirectory(externals/qhexedit)
 endif()
 add_subdirectory(src)
+
+# Install freedesktop.org metadata files, following those specifications:
+# http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html
+# http://standards.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html
+# http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD|OpenBSD|NetBSD")
+    install(FILES "${CMAKE_SOURCE_DIR}/dist/citra.desktop"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications")
+    install(FILES "${CMAKE_SOURCE_DIR}/dist/citra.svg"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/share/pixmaps")
+    install(FILES "${CMAKE_SOURCE_DIR}/dist/citra.xml"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/share/mime/packages")
+endif()

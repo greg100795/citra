@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "common/common.h"
-#include "common/emu_window.h"
+#include <atomic>
 
-#include "renderer_base.h"
+class EmuWindow;
+class RendererBase;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Video Core namespace
@@ -31,6 +31,9 @@ static const int kScreenBottomHeight    = 240;  ///< 3DS bottom screen height
 
 extern RendererBase*   g_renderer;              ///< Renderer plugin
 extern EmuWindow*      g_emu_window;            ///< Emu window
+
+// TODO: Wrap this in a user settings struct along with any other graphics settings (often set from qt ui)
+extern std::atomic<bool> g_hw_renderer_enabled;
 
 /// Start the video core
 void Start();

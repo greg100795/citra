@@ -5,12 +5,13 @@
 #pragma once
 
 #include <cstdarg>
+#include <cstddef>
 #include <iomanip>
-#include <string>
 #include <sstream>
+#include <string>
 #include <vector>
 
-#include "common/common.h"
+#include "common/common_types.h"
 
 namespace Common {
 
@@ -86,8 +87,6 @@ bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _
 
 void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path, const std::string& _Filename);
 std::string ReplaceAll(std::string result, const std::string& src, const std::string& dest);
-std::string UriDecode(const std::string & sSrc);
-std::string UriEncode(const std::string & sSrc);
 
 std::string UTF16ToUTF8(const std::u16string& input);
 std::u16string UTF8ToUTF16(const std::string& input);
@@ -129,5 +128,11 @@ bool ComparePartialString(InIt begin, InIt end, const char* other) {
     // Only return true if both strings finished at the same point
     return (begin == end) == (*other == '\0');
 }
+
+/**
+ * Creates a std::string from a fixed-size NUL-terminated char buffer. If the buffer isn't
+ * NUL-terminated then the string ends at max_len characters.
+ */
+std::string StringFromFixedZeroTerminatedBuffer(const char* buffer, size_t max_len);
 
 }

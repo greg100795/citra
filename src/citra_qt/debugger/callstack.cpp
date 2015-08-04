@@ -8,7 +8,7 @@
 
 #include "core/core.h"
 #include "core/arm/arm_interface.h"
-#include "core/mem_map.h"
+#include "core/memory.h"
 #include "common/symbols.h"
 #include "core/arm/disassembler/arm_disasm.h"
 
@@ -39,7 +39,7 @@ void CallstackWidget::OnDebugModeEntered()
     {
         ret_addr = Memory::Read32(addr);
         call_addr = ret_addr - 4; //get call address???
-        
+
         if (Memory::GetPointer(call_addr) == nullptr)
             break;
 

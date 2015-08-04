@@ -8,8 +8,12 @@
 #include <QWindow>
 #endif
 
-#include "common/common.h"
 #include "bootmanager.h"
+#include "main.h"
+
+#include "common/string_util.h"
+#include "common/scm_rev.h"
+#include "common/key_map.h"
 
 #include "core/core.h"
 #include "core/settings.h"
@@ -27,90 +31,46 @@
 #define COPYRIGHT       "Copyright (C) 2013-2014 Citra Team"
 
 EmuThread::EmuThread(GRenderWindow* render_window) :
-    filename(""), exec_cpu_step(false), cpu_running(false),
-    stop_run(false), render_window(render_window)
-{
+    exec_step(false), running(false), stop_run(false), render_window(render_window) {
 }
 
-void EmuThread::SetFilename(std::string filename)
-{
-    this->filename = filename;
-}
+void EmuThread::run() {
+    render_window->MakeCurrent();
 
-void EmuThread::run()
-{
     stop_run = false;
 
     // holds whether the cpu was running during the last iteration,
     // so that the DebugModeLeft signal can be emitted before the
     // next execution step
     bool was_active = false;
-    while (!stop_run)
-    {
-        if (cpu_running)
-        {
+    while (!stop_run) {
+        if (running) {
             if (!was_active)
                 emit DebugModeLeft();
 
             Core::RunLoop();
 
-            was_active = cpu_running || exec_cpu_step;
-            if (!was_active)
+            was_active = running || exec_step;
+            if (!was_active && !stop_run)
                 emit DebugModeEntered();
-        }
-        else if (exec_cpu_step)
-        {
+        } else if (exec_step) {
             if (!was_active)
                 emit DebugModeLeft();
 
-            exec_cpu_step = false;
+            exec_step = false;
             Core::SingleStep();
             emit DebugModeEntered();
             yieldCurrentThread();
-            
+
             was_active = false;
+        } else {
+            std::unique_lock<std::mutex> lock(running_mutex);
+            running_cv.wait(lock, [this]{ return IsRunning() || exec_step || stop_run; });
         }
     }
+
     render_window->moveContext();
-
-    Core::Stop();
 }
-
-void EmuThread::Stop()
-{
-    if (!isRunning())
-    {
-        LOG_WARNING(Frontend, "EmuThread::Stop called while emu thread wasn't running, returning...");
-        return;
-    }
-    stop_run = true;
-
-    // Release emu threads from any breakpoints, so that this doesn't hang forever.
-    Pica::g_debug_context->ClearBreakpoints();
-
-    //core::g_state = core::SYS_DIE;
-
-    // TODO: Waiting here is just a bad workaround for retarded shutdown logic.
-    wait(1000);
-    if (isRunning())
-    {
-        LOG_WARNING(Frontend, "EmuThread still running, terminating...");
-        quit();
-
-        // TODO: Waiting 50 seconds can be necessary if the logging subsystem has a lot of spam
-        // queued... This should be fixed.
-        wait(50000);
-        if (isRunning())
-        {
-            LOG_CRITICAL(Frontend, "EmuThread STILL running, something is wrong here...");
-            terminate();
-        }
-    }
-    LOG_INFO(Frontend, "EmuThread stopped");
-
-    System::Shutdown();
-}
-
 
 // This class overrides paintEvent and resizeEvent to prevent the GUI thread from stealing GL context.
 // The corresponding functionality is handled in EmuThread instead
@@ -133,13 +93,9 @@ private:
     GRenderWindow* parent;
 };
 
-EmuThread& GRenderWindow::GetEmuThread()
-{
-    return emu_thread;
-}
+GRenderWindow::GRenderWindow(QWidget* parent, EmuThread* emu_thread) :
+    QWidget(parent), keyboard_id(0), emu_thread(emu_thread) {
 
-GRenderWindow::GRenderWindow(QWidget* parent) : QWidget(parent), emu_thread(this), keyboard_id(0)
-{
     std::string window_title = Common::StringFromFormat("Citra | %s-%s", Common::g_scm_branch, Common::g_scm_desc);
     setWindowTitle(QString::fromStdString(window_title));
 
@@ -160,7 +116,6 @@ GRenderWindow::GRenderWindow(QWidget* parent) : QWidget(parent), emu_thread(this
     layout->addWidget(child);
     layout->setMargin(0);
     setLayout(layout);
-    connect(&emu_thread, SIGNAL(started()), this, SLOT(moveContext()));
 
     OnMinimalClientAreaChangeRequest(GetActiveConfig().min_client_area_size);
 
@@ -180,27 +135,21 @@ void GRenderWindow::moveContext()
     // We need to move GL context to the swapping thread in Qt5
 #if QT_VERSION > QT_VERSION_CHECK(5, 0, 0)
     // If the thread started running, move the GL Context to the new thread. Otherwise, move it back.
-    child->context()->moveToThread((QThread::currentThread() == qApp->thread()) ? &emu_thread : qApp->thread());
+    auto thread = (QThread::currentThread() == qApp->thread() && emu_thread != nullptr) ? emu_thread : qApp->thread();
+    child->context()->moveToThread(thread);
 #endif
-}
-
-GRenderWindow::~GRenderWindow()
-{
-    if (emu_thread.isRunning())
-        emu_thread.Stop();
 }
 
 void GRenderWindow::SwapBuffers()
 {
-    // MakeCurrent is already called in renderer_opengl
+#if !defined(QT_NO_DEBUG)
+    // Qt debug runtime prints a bogus warning on the console if you haven't called makeCurrent
+    // since the last time you called swapBuffers. This presumably means something if you're using
+    // QGLWidget the "regular" way, but in our multi-threaded use case is harmless since we never
+    // call doneCurrent in this thread.
+    child->makeCurrent();
+#endif
     child->swapBuffers();
-}
-
-void GRenderWindow::closeEvent(QCloseEvent* event)
-{
-    if (emu_thread.isRunning())
-        emu_thread.Stop();
-    QWidget::closeEvent(event);
 }
 
 void GRenderWindow::MakeCurrent()
@@ -288,7 +237,7 @@ void GRenderWindow::mousePressEvent(QMouseEvent *event)
 void GRenderWindow::mouseMoveEvent(QMouseEvent *event)
 {
     auto pos = event->pos();
-    this->TouchMoved(static_cast<unsigned>(pos.x()), static_cast<unsigned>(pos.y()));
+    this->TouchMoved(static_cast<unsigned>(std::max(pos.x(), 0)), static_cast<unsigned>(std::max(pos.y(), 0)));
 }
 
 void GRenderWindow::mouseReleaseEvent(QMouseEvent *event)
@@ -299,32 +248,9 @@ void GRenderWindow::mouseReleaseEvent(QMouseEvent *event)
 
 void GRenderWindow::ReloadSetKeymaps()
 {
-    KeyMap::SetKeyMapping({Settings::values.pad_a_key,      keyboard_id}, Service::HID::PAD_A);
-    KeyMap::SetKeyMapping({Settings::values.pad_b_key,      keyboard_id}, Service::HID::PAD_B);
-    KeyMap::SetKeyMapping({Settings::values.pad_select_key, keyboard_id}, Service::HID::PAD_SELECT);
-    KeyMap::SetKeyMapping({Settings::values.pad_start_key,  keyboard_id}, Service::HID::PAD_START);
-    KeyMap::SetKeyMapping({Settings::values.pad_dright_key, keyboard_id}, Service::HID::PAD_RIGHT);
-    KeyMap::SetKeyMapping({Settings::values.pad_dleft_key,  keyboard_id}, Service::HID::PAD_LEFT);
-    KeyMap::SetKeyMapping({Settings::values.pad_dup_key,    keyboard_id}, Service::HID::PAD_UP);
-    KeyMap::SetKeyMapping({Settings::values.pad_ddown_key,  keyboard_id}, Service::HID::PAD_DOWN);
-    KeyMap::SetKeyMapping({Settings::values.pad_r_key,      keyboard_id}, Service::HID::PAD_R);
-    KeyMap::SetKeyMapping({Settings::values.pad_l_key,      keyboard_id}, Service::HID::PAD_L);
-    KeyMap::SetKeyMapping({Settings::values.pad_x_key,      keyboard_id}, Service::HID::PAD_X);
-    KeyMap::SetKeyMapping({Settings::values.pad_y_key,      keyboard_id}, Service::HID::PAD_Y);
-
-    KeyMap::SetKeyMapping({Settings::values.pad_zl_key,     keyboard_id}, Service::HID::PAD_ZL);
-    KeyMap::SetKeyMapping({Settings::values.pad_zr_key,     keyboard_id}, Service::HID::PAD_ZR);
-
-    // KeyMap::SetKeyMapping({Settings::values.pad_touch_key,  keyboard_id}, Service::HID::PAD_TOUCH);
-
-    KeyMap::SetKeyMapping({Settings::values.pad_cright_key, keyboard_id}, Service::HID::PAD_C_RIGHT);
-    KeyMap::SetKeyMapping({Settings::values.pad_cleft_key,  keyboard_id}, Service::HID::PAD_C_LEFT);
-    KeyMap::SetKeyMapping({Settings::values.pad_cup_key,    keyboard_id}, Service::HID::PAD_C_UP);
-    KeyMap::SetKeyMapping({Settings::values.pad_cdown_key,  keyboard_id}, Service::HID::PAD_C_DOWN);
-    KeyMap::SetKeyMapping({Settings::values.pad_sright_key, keyboard_id}, Service::HID::PAD_CIRCLE_RIGHT);
-    KeyMap::SetKeyMapping({Settings::values.pad_sleft_key,  keyboard_id}, Service::HID::PAD_CIRCLE_LEFT);
-    KeyMap::SetKeyMapping({Settings::values.pad_sup_key,    keyboard_id}, Service::HID::PAD_CIRCLE_UP);
-    KeyMap::SetKeyMapping({Settings::values.pad_sdown_key,  keyboard_id}, Service::HID::PAD_CIRCLE_DOWN);
+    for (int i = 0; i < Settings::NativeInput::NUM_INPUTS; ++i) {
+        KeyMap::SetKeyMapping({Settings::values.input_mappings[Settings::NativeInput::All[i]], keyboard_id}, Service::HID::pad_mapping[i]);
+    }
 }
 
 void GRenderWindow::OnClientAreaResized(unsigned width, unsigned height)
@@ -334,4 +260,12 @@ void GRenderWindow::OnClientAreaResized(unsigned width, unsigned height)
 
 void GRenderWindow::OnMinimalClientAreaChangeRequest(const std::pair<unsigned,unsigned>& minimal_size) {
     setMinimumSize(minimal_size.first, minimal_size.second);
+}
+
+void GRenderWindow::OnEmulationStarting(EmuThread* emu_thread) {
+    this->emu_thread = emu_thread;
+}
+
+void GRenderWindow::OnEmulationStopping() {
+    emu_thread = nullptr;
 }

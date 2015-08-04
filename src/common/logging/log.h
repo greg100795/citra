@@ -4,10 +4,6 @@
 
 #pragma once
 
-#include <cassert>
-#include <chrono>
-#include <string>
-
 #include "common/common_types.h"
 
 namespace Log {
@@ -57,14 +53,16 @@ enum class Class : ClassType {
     Service_APT,                ///< The APT (Applets) service
     Service_GSP,                ///< The GSP (GPU control) service
     Service_AC,                 ///< The AC (WiFi status) service
+    Service_AM,                 ///< The AM (Application manager) service
     Service_PTM,                ///< The PTM (Power status & misc.) service
     Service_LDR,                ///< The LDR (3ds dll loader) service
     Service_NIM,                ///< The NIM (Network interface manager) service
-    Service_NWM,                ///< The NWM (Network manager) service
+    Service_NWM,                ///< The NWM (Network wlan manager) service
     Service_CFG,                ///< The CFG (Configuration) service
     Service_DSP,                ///< The DSP (DSP control) service
-    Service_HID,                ///< The HID (User input) service
+    Service_HID,                ///< The HID (Human interface device) service
     Service_SOC,                ///< The SOC (Socket) service
+    Service_Y2R,                ///< The Y2R (YUV to RGB conversion) service
     HW,                         ///< Low-level hardware emulation
     HW_Memory,                  ///< Memory-map and address translation
     HW_LCD,                     ///< LCD register emulation
@@ -78,11 +76,7 @@ enum class Class : ClassType {
     Count ///< Total number of logging classes
 };
 
-/**
- * Logs a message to the global logger. This proxy exists to avoid exposing the details of the
- * Logger class, including the ConcurrentRingBuffer template, to all files that desire to log
- * messages, reducing unecessary recompilations.
- */
+/// Logs a message to the global logger.
 void LogMessage(Class log_class, Level log_level,
     const char* filename, unsigned int line_nr, const char* function,
 #ifdef _MSC_VER

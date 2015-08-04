@@ -4,21 +4,19 @@
 
 #include <algorithm>
 
-#include "common/common.h"
+#include "common/assert.h"
+#include "common/logging/log.h"
 
-#include "core/arm/arm_interface.h"
-#include "core/core.h"
 #include "core/hle/kernel/kernel.h"
+#include "core/hle/kernel/resource_limit.h"
+#include "core/hle/kernel/process.h"
 #include "core/hle/kernel/thread.h"
 #include "core/hle/kernel/timer.h"
 
 namespace Kernel {
 
-unsigned int Object::next_object_id = 0;
-
-SharedPtr<Thread> g_main_thread = nullptr;
+unsigned int Object::next_object_id;
 HandleTable g_handle_table;
-u64 g_program_id = 0;
 
 void WaitObject::AddWaitingThread(SharedPtr<Thread> thread) {
     auto itr = std::find(waiting_threads.begin(), waiting_threads.end(), thread);
@@ -32,27 +30,13 @@ void WaitObject::RemoveWaitingThread(Thread* thread) {
         waiting_threads.erase(itr);
 }
 
-SharedPtr<Thread> WaitObject::WakeupNextThread() {
-    if (waiting_threads.empty())
-        return nullptr;
-
-    auto next_thread = std::move(waiting_threads.front());
-    waiting_threads.erase(waiting_threads.begin());
-
-    next_thread->ReleaseWaitObject(this);
-
-    return next_thread;
-}
-
 void WaitObject::WakeupAllWaitingThreads() {
-    auto waiting_threads_copy = waiting_threads;
+    for (auto thread : waiting_threads)
+        thread->ResumeFromWait();
 
-    // We use a copy because ReleaseWaitObject will remove the thread from this object's
-    // waiting_threads list
-    for (auto thread : waiting_threads_copy)
-        thread->ReleaseWaitObject(this);
+    waiting_threads.clear();
 
-    ASSERT_MSG(waiting_threads.empty(), "failed to awaken all waiting threads!");
+    HLE::Reschedule(__func__);
 }
 
 HandleTable::HandleTable() {
@@ -116,8 +100,7 @@ SharedPtr<Object> HandleTable::GetGeneric(Handle handle) const {
     if (handle == CurrentThread) {
         return GetCurrentThread();
     } else if (handle == CurrentProcess) {
-        LOG_ERROR(Kernel, "Current process (%08X) pseudo-handle not supported", CurrentProcess);
-        return nullptr;
+        return g_current_process;
     }
 
     if (!IsValid(handle)) {
@@ -136,27 +119,23 @@ void HandleTable::Clear() {
 
 /// Initialize the kernel
 void Init() {
+    Kernel::ResourceLimitsInit();
     Kernel::ThreadingInit();
     Kernel::TimersInit();
+
+    Object::next_object_id = 0;
+    // TODO(Subv): Start the process ids from 10 for now, as lower PIDs are
+    // reserved for low-level services
+    Process::next_process_id = 10;
 }
 
 /// Shutdown the kernel
 void Shutdown() {
     Kernel::ThreadingShutdown();
     Kernel::TimersShutdown();
+    Kernel::ResourceLimitsShutdown();
     g_handle_table.Clear(); // Free all kernel objects
-}
-
-/**
- * Loads executable stored at specified address
- * @entry_point Entry point in memory of loaded executable
- * @return True on success, otherwise false
- */
-bool LoadExec(u32 entry_point) {
-    // 0x30 is the typical main thread priority I've seen used so far
-    g_main_thread = Kernel::SetupMainThread(Kernel::DEFAULT_STACK_SIZE, entry_point, THREADPRIO_DEFAULT);
-
-    return true;
+    g_current_process = nullptr;
 }
 
 } // namespace

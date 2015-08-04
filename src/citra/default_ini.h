@@ -33,15 +33,15 @@ pad_cleft =
 pad_cright =
 
 [Core]
-# The refresh rate for the GPU
-# Defaults to 30
-gpu_refresh_rate =
-
 # The applied frameskip amount. Must be a power of two.
 # 0 (default): No frameskip, 1: x2 frameskip, 2: x4 frameskip, 3: x8 frameskip, etc.
 frame_skip =
 
 [Renderer]
+# Whether to use software or hardware rendering.
+# 0 (default): Software, 1: Hardware
+use_hw_renderer =
+
 # The clear color for the renderer. What shows up on the sides of the bottom screen.
 # Must be in range of 0.0-1.0. Defaults to 1.0 for all.
 bg_red =

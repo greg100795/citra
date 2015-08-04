@@ -24,9 +24,7 @@
 
 #pragma once
 
-#include <cmath>
 #include <cstdint>
-#include <cstdlib>
 
 #ifdef _MSC_VER
 #ifndef __func__
@@ -47,54 +45,17 @@ typedef std::int64_t s64; ///< 64-bit signed int
 typedef float   f32; ///< 32-bit floating point
 typedef double  f64; ///< 64-bit floating point
 
-/// Union for fast 16-bit type casting
-union t16 {
-    u8  _u8[2];             ///< 8-bit unsigned char(s)
-    u16 _u16;               ///< 16-bit unsigned shorts(s)
+// TODO: It would be nice to eventually replace these with strong types that prevent accidental
+// conversion between each other.
+typedef u32 VAddr; ///< Represents a pointer in the userspace virtual address space.
+typedef u32 PAddr; ///< Represents a pointer in the ARM11 physical address space.
+
+// An inheritable class to disallow the copy constructor and operator= functions
+class NonCopyable {
+protected:
+    NonCopyable() = default;
+    ~NonCopyable() = default;
+
+    NonCopyable(NonCopyable&) = delete;
+    NonCopyable& operator=(NonCopyable&) = delete;
 };
-
-/// Union for fast 32-bit type casting
-union t32 {
-    f32 _f32;               ///< 32-bit floating point(s)
-    u32 _u32;               ///< 32-bit unsigned int(s)
-    s32 _s32;               ///< 32-bit signed int(s)
-    u16 _u16[2];            ///< 16-bit unsigned shorts(s)
-    u8  _u8[4];             ///< 8-bit unsigned char(s)
-};
-
-/// Union for fast 64-bit type casting
-union t64 {
-    f64 _f64;               ///< 64-bit floating point
-    u64 _u64;               ///< 64-bit unsigned long
-    f32 _f32[2];            ///< 32-bit floating point(s)
-    u32 _u32[2];            ///< 32-bit unsigned int(s)
-    s32 _s32[2];            ///< 32-bit signed int(s)
-    u16 _u16[4];            ///< 16-bit unsigned shorts(s)
-    u8  _u8[8];             ///< 8-bit unsigned char(s)
-};
-
-namespace Common {
-/// Rectangle data structure
-class Rect {
-public:
-    Rect(int x0=0, int y0=0, int x1=0, int y1=0) {
-        x0_ = x0;
-        y0_ = y0;
-        x1_ = x1;
-        y1_ = y1;
-    }
-    ~Rect() { }
-
-    int x0_;    ///< Rect top left X-coordinate
-    int y0_;    ///< Rect top left Y-coordinate
-    int x1_;    ///< Rect bottom left X-coordinate
-    int y1_;    ///< Rect bottom right Y-coordinate
-
-    inline u32 width() const { return std::abs(x1_ - x0_); }
-    inline u32 height() const { return std::abs(y1_ - y0_); }
-
-    inline bool operator == (const Rect& val) const {
-        return (x0_ == val.x0_ && y0_ == val.y0_ && x1_ == val.x1_ && y1_ == val.y1_);
-    }
-};
-}

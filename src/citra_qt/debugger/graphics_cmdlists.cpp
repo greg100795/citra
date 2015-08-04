@@ -2,19 +2,22 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#include <QApplication>
+#include <QClipboard>
 #include <QLabel>
 #include <QListView>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QTreeView>
+#include <QHeaderView>
 #include <QSpinBox>
 #include <QComboBox>
 
-#include "video_core/pica.h"
-#include "video_core/math.h"
+#include "common/vector_math.h"
 
 #include "video_core/debug_utils/debug_utils.h"
+#include "video_core/pica.h"
 
 #include "graphics_cmdlists.h"
 
@@ -74,7 +77,7 @@ TextureInfoDockWidget::TextureInfoDockWidget(const Pica::DebugUtils::TextureInfo
     format_choice->addItem(tr("I8"));
     format_choice->addItem(tr("A8"));
     format_choice->addItem(tr("IA4"));
-    format_choice->addItem(tr("UNK10"));
+    format_choice->addItem(tr("I4"));
     format_choice->addItem(tr("A4"));
     format_choice->addItem(tr("ETC1"));
     format_choice->addItem(tr("ETC1A4"));
@@ -159,7 +162,7 @@ void TextureInfoDockWidget::OnStrideChanged(int value) {
 }
 
 QPixmap TextureInfoDockWidget::ReloadPixmap() const {
-    u8* src = Memory::GetPointer(Pica::PAddrToVAddr(info.physical_address));
+    u8* src = Memory::GetPhysicalPointer(info.physical_address);
     return QPixmap::fromImage(LoadTexture(src, info));
 }
 
@@ -168,11 +171,11 @@ GPUCommandListModel::GPUCommandListModel(QObject* parent) : QAbstractListModel(p
 }
 
 int GPUCommandListModel::rowCount(const QModelIndex& parent) const {
-    return pica_trace.writes.size();
+    return static_cast<int>(pica_trace.writes.size());
 }
 
 int GPUCommandListModel::columnCount(const QModelIndex& parent) const {
-    return 2;
+    return 3;
 }
 
 QVariant GPUCommandListModel::data(const QModelIndex& index, int role) const {
@@ -185,14 +188,13 @@ QVariant GPUCommandListModel::data(const QModelIndex& index, int role) const {
 
     if (role == Qt::DisplayRole) {
         QString content;
-        if (index.column() == 0) {
-            QString content = QString::fromLatin1(Pica::Regs::GetCommandName(cmd.cmd_id).c_str());
-            content.append(" ");
-            return content;
-        } else if (index.column() == 1) {
-            QString content = QString("%1 ").arg(cmd.hex, 8, 16, QLatin1Char('0'));
-            content.append(QString("%1 ").arg(val, 8, 16, QLatin1Char('0')));
-            return content;
+        switch ( index.column() ) {
+        case 0:
+            return QString::fromLatin1(Pica::Regs::GetCommandName(cmd.cmd_id).c_str());
+        case 1:
+            return QString("%1").arg(cmd.cmd_id, 3, 16, QLatin1Char('0'));
+        case 2:
+            return QString("%1").arg(val, 8, 16, QLatin1Char('0'));
         }
     } else if (role == CommandIdRole) {
         return QVariant::fromValue<int>(cmd.cmd_id.Value());
@@ -205,10 +207,13 @@ QVariant GPUCommandListModel::headerData(int section, Qt::Orientation orientatio
     switch(role) {
     case Qt::DisplayRole:
     {
-        if (section == 0) {
+        switch (section) {
+        case 0:
             return tr("Command Name");
-        } else if (section == 1) {
-            return tr("Data");
+        case 1:
+            return tr("Register");
+        case 2:
+            return tr("New Value");
         }
 
         break;
@@ -228,7 +233,7 @@ void GPUCommandListModel::OnPicaTraceFinished(const Pica::DebugUtils::PicaTrace&
 
 #define COMMAND_IN_RANGE(cmd_id, reg_name)   \
     (cmd_id >= PICA_REG_INDEX(reg_name) &&   \
-     cmd_id < PICA_REG_INDEX(reg_name) + sizeof(decltype(Pica::registers.reg_name)) / 4)
+     cmd_id < PICA_REG_INDEX(reg_name) + sizeof(decltype(Pica::g_state.regs.reg_name)) / 4)
 
 void GPUCommandListWidget::OnCommandDoubleClicked(const QModelIndex& index) {
     const unsigned int command_id = list_widget->model()->data(index, GPUCommandListModel::CommandIdRole).toUInt();
@@ -244,8 +249,8 @@ void GPUCommandListWidget::OnCommandDoubleClicked(const QModelIndex& index) {
         } else {
             index = 2;
         }
-        auto config = Pica::registers.GetTextures()[index].config;
-        auto format = Pica::registers.GetTextures()[index].format;
+        auto config = Pica::g_state.regs.GetTextures()[index].config;
+        auto format = Pica::g_state.regs.GetTextures()[index].format;
         auto info = Pica::DebugUtils::TextureInfo::FromPicaRegister(config, format);
 
         // TODO: Instead, emit a signal here to be caught by the main window widget.
@@ -270,11 +275,11 @@ void GPUCommandListWidget::SetCommandInfo(const QModelIndex& index) {
         } else {
             index = 2;
         }
-        auto config = Pica::registers.GetTextures()[index].config;
-        auto format = Pica::registers.GetTextures()[index].format;
+        auto config = Pica::g_state.regs.GetTextures()[index].config;
+        auto format = Pica::g_state.regs.GetTextures()[index].format;
 
         auto info = Pica::DebugUtils::TextureInfo::FromPicaRegister(config, format);
-        u8* src = Memory::GetPointer(Pica::PAddrToVAddr(config.GetPhysicalAddress()));
+        u8* src = Memory::GetPhysicalPointer(config.GetPhysicalAddress());
         new_info_widget = new TextureInfoWidget(src, info);
     } else {
         new_info_widget = new QWidget;
@@ -297,6 +302,13 @@ GPUCommandListWidget::GPUCommandListWidget(QWidget* parent) : QDockWidget(tr("Pi
     list_widget->setModel(model);
     list_widget->setFont(QFont("monospace"));
     list_widget->setRootIsDecorated(false);
+    list_widget->setUniformRowHeights(true);
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
+    list_widget->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+#else
+    list_widget->header()->setResizeMode(QHeaderView::ResizeToContents);
+#endif
 
     connect(list_widget->selectionModel(), SIGNAL(currentChanged(const QModelIndex&,const QModelIndex&)),
             this, SLOT(SetCommandInfo(const QModelIndex&)));
@@ -304,16 +316,24 @@ GPUCommandListWidget::GPUCommandListWidget(QWidget* parent) : QDockWidget(tr("Pi
             this, SLOT(OnCommandDoubleClicked(const QModelIndex&)));
 
     toggle_tracing = new QPushButton(tr("Start Tracing"));
+    QPushButton* copy_all = new QPushButton(tr("Copy All"));
 
     connect(toggle_tracing, SIGNAL(clicked()), this, SLOT(OnToggleTracing()));
     connect(this, SIGNAL(TracingFinished(const Pica::DebugUtils::PicaTrace&)),
             model, SLOT(OnPicaTraceFinished(const Pica::DebugUtils::PicaTrace&)));
 
+    connect(copy_all, SIGNAL(clicked()), this, SLOT(CopyAllToClipboard()));
+
     command_info_widget = new QWidget;
 
     QVBoxLayout* main_layout = new QVBoxLayout;
     main_layout->addWidget(list_widget);
-    main_layout->addWidget(toggle_tracing);
+    {
+        QHBoxLayout* sub_layout = new QHBoxLayout;
+        sub_layout->addWidget(toggle_tracing);
+        sub_layout->addWidget(copy_all);
+        main_layout->addLayout(sub_layout);
+    }
     main_layout->addWidget(command_info_widget);
     main_widget->setLayout(main_layout);
 
@@ -329,4 +349,22 @@ void GPUCommandListWidget::OnToggleTracing() {
         emit TracingFinished(*pica_trace);
         toggle_tracing->setText(tr("Start Tracing"));
     }
+}
+
+void GPUCommandListWidget::CopyAllToClipboard() {
+    QClipboard* clipboard = QApplication::clipboard();
+    QString text;
+
+    QAbstractItemModel* model = static_cast<QAbstractListModel*>(list_widget->model());
+
+    for (int row = 0; row < model->rowCount({}); ++row) {
+        for (int col = 0; col < model->columnCount({}); ++col) {
+            QModelIndex index = model->index(row, col);
+            text += model->data(index).value<QString>();
+            text += '\t';
+        }
+        text += '\n';
+    }
+
+    clipboard->setText(text);
 }

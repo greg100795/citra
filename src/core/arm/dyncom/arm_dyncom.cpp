@@ -2,7 +2,12 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include "core/arm/skyeye_common/armemu.h"
+#include <cstring>
+
+#include "common/make_unique.h"
+
+#include "core/arm/skyeye_common/armstate.h"
+#include "core/arm/skyeye_common/armsupp.h"
 #include "core/arm/skyeye_common/vfp/vfp.h"
 
 #include "core/arm/dyncom/arm_dyncom.h"
@@ -12,33 +17,8 @@
 #include "core/core.h"
 #include "core/core_timing.h"
 
-const static cpu_config_t s_arm11_cpu_info = {
-    "armv6", "arm11", 0x0007b000, 0x0007f000, NONCACHE
-};
-
 ARM_DynCom::ARM_DynCom(PrivilegeMode initial_mode) {
-    state = std::unique_ptr<ARMul_State>(new ARMul_State);
-
-    ARMul_NewState(state.get());
-    ARMul_SelectProcessor(state.get(), ARM_v6_Prop | ARM_v5_Prop | ARM_v5e_Prop);
-
-    state->abort_model = ABORT_BASE_RESTORED;
-    state->cpu = (cpu_config_t*)&s_arm11_cpu_info;
-
-    state->bigendSig = LOW;
-    state->lateabtSig = LOW;
-    state->NirqSig = HIGH;
-
-    // Reset the core to initial state
-    ARMul_Reset(state.get());
-    state->NextInstr = RESUME; // NOTE: This will be overwritten by LoadContext
-    state->Emulate = RUN;
-
-    // Switch to the desired privilege mode.
-    switch_mode(state.get(), initial_mode);
-
-    state->Reg[13] = 0x10000000; // Set stack pointer to the top of the stack
-    state->Reg[15] = 0x00000000;
+    state = Common::make_unique<ARMul_State>(initial_mode);
 }
 
 ARM_DynCom::~ARM_DynCom() {
@@ -99,12 +79,11 @@ void ARM_DynCom::ResetContext(Core::ThreadContext& context, u32 stack_top, u32 e
     context.pc = entry_point;
     context.sp = stack_top;
     context.cpsr = 0x1F; // Usermode
-    context.mode = 8;    // Instructs dyncom CPU core to start execution as if it's "resuming" a thread.
 }
 
 void ARM_DynCom::SaveContext(Core::ThreadContext& ctx) {
-    memcpy(ctx.cpu_registers, state->Reg, sizeof(ctx.cpu_registers));
-    memcpy(ctx.fpu_registers, state->ExtReg, sizeof(ctx.fpu_registers));
+    memcpy(ctx.cpu_registers, state->Reg.data(), sizeof(ctx.cpu_registers));
+    memcpy(ctx.fpu_registers, state->ExtReg.data(), sizeof(ctx.fpu_registers));
 
     ctx.sp = state->Reg[13];
     ctx.lr = state->Reg[14];
@@ -113,13 +92,11 @@ void ARM_DynCom::SaveContext(Core::ThreadContext& ctx) {
 
     ctx.fpscr = state->VFP[1];
     ctx.fpexc = state->VFP[2];
-
-    ctx.mode = state->NextInstr;
 }
 
 void ARM_DynCom::LoadContext(const Core::ThreadContext& ctx) {
-    memcpy(state->Reg, ctx.cpu_registers, sizeof(ctx.cpu_registers));
-    memcpy(state->ExtReg, ctx.fpu_registers, sizeof(ctx.fpu_registers));
+    memcpy(state->Reg.data(), ctx.cpu_registers, sizeof(ctx.cpu_registers));
+    memcpy(state->ExtReg.data(), ctx.fpu_registers, sizeof(ctx.fpu_registers));
 
     state->Reg[13] = ctx.sp;
     state->Reg[14] = ctx.lr;
@@ -128,8 +105,6 @@ void ARM_DynCom::LoadContext(const Core::ThreadContext& ctx) {
 
     state->VFP[1] = ctx.fpscr;
     state->VFP[2] = ctx.fpexc;
-
-    state->NextInstr = ctx.mode;
 }
 
 void ARM_DynCom::PrepareReschedule() {

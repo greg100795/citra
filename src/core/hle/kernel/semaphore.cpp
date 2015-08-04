@@ -2,7 +2,7 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include "common/common.h"
+#include "common/assert.h"
 
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/semaphore.h"
@@ -42,17 +42,13 @@ void Semaphore::Acquire() {
 
 ResultVal<s32> Semaphore::Release(s32 release_count) {
     if (max_count - available_count < release_count)
-        return ResultCode(ErrorDescription::OutOfRange, ErrorModule::Kernel, 
+        return ResultCode(ErrorDescription::OutOfRange, ErrorModule::Kernel,
                           ErrorSummary::InvalidArgument, ErrorLevel::Permanent);
 
     s32 previous_count = available_count;
     available_count += release_count;
 
-    // Notify some of the threads that the semaphore has been released
-    // stop once the semaphore is full again or there are no more waiting threads
-    while (!ShouldWait() && WakeupNextThread() != nullptr) {
-        Acquire();
-    }
+    WakeupAllWaitingThreads();
 
     return MakeResult<s32>(previous_count);
 }

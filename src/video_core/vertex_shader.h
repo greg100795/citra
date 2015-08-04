@@ -4,11 +4,10 @@
 
 #pragma once
 
-#include <initializer_list>
+#include <type_traits>
 
-#include <common/common_types.h>
+#include "common/vector_math.h"
 
-#include "math.h"
 #include "pica.h"
 
 namespace Pica {
@@ -66,17 +65,7 @@ struct OutputVertex {
 static_assert(std::is_pod<OutputVertex>::value, "Structure is not POD");
 static_assert(sizeof(OutputVertex) == 32 * sizeof(float), "OutputVertex has invalid size");
 
-void SubmitShaderMemoryChange(u32 addr, u32 value);
-void SubmitSwizzleDataChange(u32 addr, u32 value);
-
-OutputVertex RunShader(const InputVertex& input, int num_attributes);
-
-Math::Vec4<float24>& GetFloatUniform(u32 index);
-bool& GetBoolUniform(u32 index);
-Math::Vec4<u8>& GetIntUniform(u32 index);
-
-const std::array<u32, 1024>& GetShaderBinary();
-const std::array<u32, 1024>& GetSwizzlePatterns();
+OutputVertex RunShader(const InputVertex& input, int num_attributes, const Regs::ShaderConfig& config, const State::ShaderSetup& setup);
 
 } // namespace
 

@@ -2,7 +2,8 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include "common/common.h"
+#include "common/assert.h"
+#include "common/logging/log.h"
 
 #include "core/core_timing.h"
 #include "core/hle/kernel/kernel.h"
@@ -12,7 +13,7 @@
 namespace Kernel {
 
 /// The event type of the generic timer callback event
-static int timer_callback_event_type = -1;
+static int timer_callback_event_type;
 // TODO(yuriks): This can be removed if Timer objects are explicitly pooled in the future, allowing
 //               us to simply use a pool index or similar.
 static Kernel::HandleTable timer_callback_handle_table;
@@ -51,10 +52,14 @@ void Timer::Set(s64 initial, s64 interval) {
     u64 initial_microseconds = initial / 1000;
     CoreTiming::ScheduleEvent(usToCycles(initial_microseconds),
             timer_callback_event_type, callback_handle);
+
+    HLE::Reschedule(__func__);
 }
 
 void Timer::Cancel() {
     CoreTiming::UnscheduleEvent(timer_callback_event_type, callback_handle);
+
+    HLE::Reschedule(__func__);
 }
 
 void Timer::Clear() {
@@ -66,7 +71,7 @@ static void TimerCallback(u64 timer_handle, int cycles_late) {
     SharedPtr<Timer> timer = timer_callback_handle_table.Get<Timer>(static_cast<Handle>(timer_handle));
 
     if (timer == nullptr) {
-        LOG_CRITICAL(Kernel, "Callback fired for invalid timer %08X", timer_handle);
+        LOG_CRITICAL(Kernel, "Callback fired for invalid timer %08lX", timer_handle);
         return;
     }
 
@@ -83,12 +88,13 @@ static void TimerCallback(u64 timer_handle, int cycles_late) {
     if (timer->interval_delay != 0) {
         // Reschedule the timer with the interval delay
         u64 interval_microseconds = timer->interval_delay / 1000;
-        CoreTiming::ScheduleEvent(usToCycles(interval_microseconds) - cycles_late, 
+        CoreTiming::ScheduleEvent(usToCycles(interval_microseconds) - cycles_late,
                 timer_callback_event_type, timer_handle);
     }
 }
 
 void TimersInit() {
+    timer_callback_handle_table.Clear();
     timer_callback_event_type = CoreTiming::RegisterEvent("TimerCallback", TimerCallback);
 }
 

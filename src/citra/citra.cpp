@@ -2,13 +2,20 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#include <string>
 #include <thread>
+#include <iostream>
 
-#include "common/common.h"
-#include "common/logging/text_formatter.h"
+#ifdef _MSC_VER
+#include <getopt.h>
+#else
+#include <unistd.h>
+#include <getopt.h>
+#endif
+
+#include "common/logging/log.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
-#include "common/scope_exit.h"
 
 #include "core/settings.h"
 #include "core/system.h"
@@ -18,18 +25,41 @@
 #include "citra/config.h"
 #include "citra/emu_window/emu_window_glfw.h"
 
+#include "video_core/video_core.h"
+
+
+static void PrintHelp()
+{
+    std::cout << "Usage: citra <filename>" << std::endl;
+}
+
 /// Application entry point
-int __cdecl main(int argc, char **argv) {
-    std::shared_ptr<Log::Logger> logger = Log::InitGlobalLogger();
+int main(int argc, char **argv) {
+    int option_index = 0;
+    std::string boot_filename;
+    static struct option long_options[] = {
+        { "help", no_argument, 0, 'h' },
+        { 0, 0, 0, 0 }
+    };
+
+    while (optind < argc) {
+        char arg = getopt_long(argc, argv, ":h", long_options, &option_index);
+        if (arg != -1) {
+            switch (arg) {
+            case 'h':
+                PrintHelp();
+                return 0;
+            }
+        } else {
+            boot_filename = argv[optind];
+            optind++;
+        }
+    }
+
     Log::Filter log_filter(Log::Level::Debug);
     Log::SetFilter(&log_filter);
-    std::thread logging_thread(Log::TextLoggingLoop, logger);
-    SCOPE_EXIT({
-        logger->Close();
-        logging_thread.join();
-    });
 
-    if (argc < 2) {
+    if (boot_filename.empty()) {
         LOG_CRITICAL(Frontend, "Failed to load ROM: No ROM specified");
         return -1;
     }
@@ -37,8 +67,10 @@ int __cdecl main(int argc, char **argv) {
     Config config;
     log_filter.ParseFilterString(Settings::values.log_filter);
 
-    std::string boot_filename = argv[1];
+
     EmuWindow_GLFW* emu_window = new EmuWindow_GLFW;
+
+    VideoCore::g_hw_renderer_enabled = Settings::values.use_hw_renderer;
 
     System::Init(emu_window);
 

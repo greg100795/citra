@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "common/common.h"
+#include "common/assert.h"
 
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/event.h"
@@ -21,7 +21,7 @@ SharedPtr<Event> Event::Create(ResetType reset_type, std::string name) {
     SharedPtr<Event> evt(new Event);
 
     evt->signaled = false;
-    evt->reset_type = evt->intitial_reset_type = reset_type;
+    evt->reset_type = reset_type;
     evt->name = std::move(name);
 
     return evt;

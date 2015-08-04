@@ -4,11 +4,18 @@
 
 #pragma once
 
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "common/common_types.h"
 #include "common/file_util.h"
 
 #include "core/file_sys/archive_backend.h"
-#include "core/loader/loader.h"
+#include "core/file_sys/directory_backend.h"
+#include "core/file_sys/file_backend.h"
+#include "core/hle/result.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // FileSys namespace
@@ -24,7 +31,7 @@ class DiskArchive : public ArchiveBackend {
 public:
     DiskArchive(const std::string& mount_point_) : mount_point(mount_point_) {}
 
-    virtual std::string GetName() const { return "DiskArchive: " + mount_point; }
+    virtual std::string GetName() const override { return "DiskArchive: " + mount_point; }
 
     std::unique_ptr<FileBackend> OpenFile(const Path& path, const Mode mode) const override;
     bool DeleteFile(const Path& path) const override;
@@ -48,10 +55,10 @@ public:
     DiskFile(const DiskArchive& archive, const Path& path, const Mode mode);
 
     bool Open() override;
-    size_t Read(const u64 offset, const u32 length, u8* buffer) const override;
-    size_t Write(const u64 offset, const u32 length, const u32 flush, const u8* buffer) const override;
-    size_t GetSize() const override;
-    bool SetSize(const u64 size) const override;
+    size_t Read(u64 offset, size_t length, u8* buffer) const override;
+    size_t Write(u64 offset, size_t length, bool flush, const u8* buffer) const override;
+    u64 GetSize() const override;
+    bool SetSize(u64 size) const override;
     bool Close() const override;
 
     void Flush() const override {

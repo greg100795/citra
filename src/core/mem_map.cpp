@@ -2,88 +2,160 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include "common/common.h"
-#include "common/mem_arena.h"
+#include <map>
+#include <memory>
+#include <utility>
+#include <vector>
 
+#include "common/common_types.h"
+#include "common/logging/log.h"
+
+#include "core/hle/config_mem.h"
+#include "core/hle/kernel/vm_manager.h"
+#include "core/hle/result.h"
+#include "core/hle/shared_page.h"
 #include "core/mem_map.h"
+#include "core/memory.h"
+#include "core/memory_setup.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace Memory {
 
-u8* g_base                      = nullptr;   ///< The base pointer to the auto-mirrored arena.
+namespace {
 
-static MemArena arena;                       ///< The MemArena class
-
-u8* g_exefs_code                = nullptr;   ///< ExeFS:/.code is loaded here
-u8* g_system_mem                = nullptr;   ///< System memory
-u8* g_heap                      = nullptr;   ///< Application heap (main memory)
-u8* g_heap_linear               = nullptr;   ///< Linear heap
-u8* g_vram                      = nullptr;   ///< Video memory (VRAM) pointer
-u8* g_shared_mem                = nullptr;   ///< Shared memory
-u8* g_dsp_mem                   = nullptr;   ///< DSP memory
-u8* g_kernel_mem;                              ///< Kernel memory
-
-static u8* physical_bootrom     = nullptr;   ///< Bootrom physical memory
-static u8* uncached_bootrom     = nullptr;
-
-static u8* physical_exefs_code  = nullptr;   ///< Phsical ExeFS:/.code is loaded here
-static u8* physical_system_mem  = nullptr;   ///< System physical memory
-static u8* physical_fcram       = nullptr;   ///< Main physical memory (FCRAM)
-static u8* physical_heap_gsp    = nullptr;   ///< GSP heap physical memory
-static u8* physical_vram        = nullptr;   ///< Video physical memory (VRAM)
-static u8* physical_shared_mem  = nullptr;   ///< Physical shared memory
-static u8* physical_dsp_mem     = nullptr;   ///< Physical DSP memory
-static u8* physical_kernel_mem;              ///< Kernel memory
-
-// We don't declare the IO region in here since its handled by other means.
-static MemoryView g_views[] = {
-    {&g_exefs_code,     &physical_exefs_code,   EXEFS_CODE_VADDR,       EXEFS_CODE_SIZE,    0},
-    {&g_vram,           &physical_vram,         VRAM_VADDR,             VRAM_SIZE,          0},
-    {&g_heap,           &physical_fcram,        HEAP_VADDR,             HEAP_SIZE,          MV_IS_PRIMARY_RAM},
-    {&g_shared_mem,     &physical_shared_mem,   SHARED_MEMORY_VADDR,    SHARED_MEMORY_SIZE, 0},
-    {&g_system_mem,     &physical_system_mem,   SYSTEM_MEMORY_VADDR,    SYSTEM_MEMORY_SIZE, 0},
-    {&g_dsp_mem,        &physical_dsp_mem,      DSP_MEMORY_VADDR,       DSP_MEMORY_SIZE,    0},
-    {&g_kernel_mem,     &physical_kernel_mem,   KERNEL_MEMORY_VADDR,    KERNEL_MEMORY_SIZE, 0},
-    {&g_heap_linear,    &physical_heap_gsp,     HEAP_LINEAR_VADDR,      HEAP_LINEAR_SIZE,   0},
+struct MemoryArea {
+    u32 base;
+    u32 size;
+    const char* name;
 };
 
-/*static MemoryView views[] =
-{
-    {&m_pScratchPad, &m_pPhysicalScratchPad,  0x00010000, SCRATCHPAD_SIZE, 0},
-    {NULL,           &m_pUncachedScratchPad,  0x40010000, SCRATCHPAD_SIZE, MV_MIRROR_PREVIOUS},
-    {&m_pVRAM,       &m_pPhysicalVRAM,        0x04000000, 0x00800000, 0},
-    {NULL,           &m_pUncachedVRAM,        0x44000000, 0x00800000, MV_MIRROR_PREVIOUS},
-    {&m_pRAM,        &m_pPhysicalRAM,         0x08000000, g_MemorySize, MV_IS_PRIMARY_RAM},    // only from 0x08800000 is it usable (last 24 megs)
-    {NULL,           &m_pUncachedRAM,         0x48000000, g_MemorySize, MV_MIRROR_PREVIOUS | MV_IS_PRIMARY_RAM},
-    {NULL,           &m_pKernelRAM,           0x88000000, g_MemorySize, MV_MIRROR_PREVIOUS | MV_IS_PRIMARY_RAM},
+// We don't declare the IO regions in here since its handled by other means.
+static MemoryArea memory_areas[] = {
+    {HEAP_VADDR,          HEAP_SIZE,              "Heap"},          // Application heap (main memory)
+    {SHARED_MEMORY_VADDR, SHARED_MEMORY_SIZE,     "Shared Memory"}, // Shared memory
+    {LINEAR_HEAP_VADDR,   LINEAR_HEAP_SIZE,       "Linear Heap"},   // Linear heap (main memory)
+    {VRAM_VADDR,          VRAM_SIZE,              "VRAM"},          // Video memory (VRAM)
+    {DSP_RAM_VADDR,       DSP_RAM_SIZE,           "DSP RAM"},       // DSP memory
+    {TLS_AREA_VADDR,      TLS_AREA_SIZE,          "TLS Area"},      // TLS memory
+};
 
-    // TODO: There are a few swizzled mirrors of VRAM, not sure about the best way to
-    // implement those.
-};*/
+/// Represents a block of memory mapped by ControlMemory/MapMemoryBlock
+struct MemoryBlock {
+    MemoryBlock() : handle(0), base_address(0), address(0), size(0), operation(0), permissions(0) {
+    }
+    u32 handle;
+    u32 base_address;
+    u32 address;
+    u32 size;
+    u32 operation;
+    u32 permissions;
 
-static const int kNumMemViews = sizeof(g_views) / sizeof(MemoryView);    ///< Number of mem views
+    const u32 GetVirtualAddress() const{
+        return base_address + address;
+    }
+};
 
-void Init() {
-    int flags = 0;
+static std::map<u32, MemoryBlock> heap_map;
+static std::map<u32, MemoryBlock> heap_linear_map;
 
-    for (size_t i = 0; i < ARRAY_SIZE(g_views); i++) {
-        if (g_views[i].flags & MV_IS_PRIMARY_RAM)
-            g_views[i].size = FCRAM_SIZE;
+}
+
+u32 MapBlock_Heap(u32 size, u32 operation, u32 permissions) {
+    MemoryBlock block;
+
+    block.base_address  = HEAP_VADDR;
+    block.size          = size;
+    block.operation     = operation;
+    block.permissions   = permissions;
+
+    if (heap_map.size() > 0) {
+        const MemoryBlock last_block = heap_map.rbegin()->second;
+        block.address = last_block.address + last_block.size;
+    }
+    heap_map[block.GetVirtualAddress()] = block;
+
+    return block.GetVirtualAddress();
+}
+
+u32 MapBlock_HeapLinear(u32 size, u32 operation, u32 permissions) {
+    MemoryBlock block;
+
+    block.base_address  = LINEAR_HEAP_VADDR;
+    block.size          = size;
+    block.operation     = operation;
+    block.permissions   = permissions;
+
+    if (heap_linear_map.size() > 0) {
+        const MemoryBlock last_block = heap_linear_map.rbegin()->second;
+        block.address = last_block.address + last_block.size;
+    }
+    heap_linear_map[block.GetVirtualAddress()] = block;
+
+    return block.GetVirtualAddress();
+}
+
+PAddr VirtualToPhysicalAddress(const VAddr addr) {
+    if (addr == 0) {
+        return 0;
+    } else if (addr >= VRAM_VADDR && addr < VRAM_VADDR_END) {
+        return addr - VRAM_VADDR + VRAM_PADDR;
+    } else if (addr >= LINEAR_HEAP_VADDR && addr < LINEAR_HEAP_VADDR_END) {
+        return addr - LINEAR_HEAP_VADDR + FCRAM_PADDR;
+    } else if (addr >= DSP_RAM_VADDR && addr < DSP_RAM_VADDR_END) {
+        return addr - DSP_RAM_VADDR + DSP_RAM_PADDR;
+    } else if (addr >= IO_AREA_VADDR && addr < IO_AREA_VADDR_END) {
+        return addr - IO_AREA_VADDR + IO_AREA_PADDR;
     }
 
-    g_base = MemoryMap_Setup(g_views, kNumMemViews, flags, &arena);
+    LOG_ERROR(HW_Memory, "Unknown virtual address @ 0x%08x", addr);
+    // To help with debugging, set bit on address so that it's obviously invalid.
+    return addr | 0x80000000;
+}
 
-    LOG_DEBUG(HW_Memory, "initialized OK, RAM at %p (mirror at 0 @ %p)", g_heap,
-        physical_fcram);
+VAddr PhysicalToVirtualAddress(const PAddr addr) {
+    if (addr == 0) {
+        return 0;
+    } else if (addr >= VRAM_PADDR && addr < VRAM_PADDR_END) {
+        return addr - VRAM_PADDR + VRAM_VADDR;
+    } else if (addr >= FCRAM_PADDR && addr < FCRAM_PADDR_END) {
+        return addr - FCRAM_PADDR + LINEAR_HEAP_VADDR;
+    } else if (addr >= DSP_RAM_PADDR && addr < DSP_RAM_PADDR_END) {
+        return addr - DSP_RAM_PADDR + DSP_RAM_VADDR;
+    } else if (addr >= IO_AREA_PADDR && addr < IO_AREA_PADDR_END) {
+        return addr - IO_AREA_PADDR + IO_AREA_VADDR;
+    }
+
+    LOG_ERROR(HW_Memory, "Unknown physical address @ 0x%08x", addr);
+    // To help with debugging, set bit on address so that it's obviously invalid.
+    return addr | 0x80000000;
+}
+
+void Init() {
+    InitMemoryMap();
+    LOG_DEBUG(HW_Memory, "initialized OK");
+}
+
+void InitLegacyAddressSpace(Kernel::VMManager& address_space) {
+    using namespace Kernel;
+
+    for (MemoryArea& area : memory_areas) {
+        auto block = std::make_shared<std::vector<u8>>(area.size);
+        address_space.MapMemoryBlock(area.base, std::move(block), 0, area.size, MemoryState::Private).Unwrap();
+    }
+
+    auto cfg_mem_vma = address_space.MapBackingMemory(CONFIG_MEMORY_VADDR,
+            (u8*)&ConfigMem::config_mem, CONFIG_MEMORY_SIZE, MemoryState::Shared).MoveFrom();
+    address_space.Reprotect(cfg_mem_vma, VMAPermission::Read);
+
+    auto shared_page_vma = address_space.MapBackingMemory(SHARED_PAGE_VADDR,
+            (u8*)&SharedPage::shared_page, SHARED_PAGE_SIZE, MemoryState::Shared).MoveFrom();
+    address_space.Reprotect(shared_page_vma, VMAPermission::Read);
 }
 
 void Shutdown() {
-    u32 flags = 0;
-    MemoryMap_Shutdown(g_views, kNumMemViews, flags, &arena);
-
-    arena.ReleaseSpace();
-    g_base = nullptr;
+    heap_map.clear();
+    heap_linear_map.clear();
 
     LOG_DEBUG(HW_Memory, "shutdown OK");
 }

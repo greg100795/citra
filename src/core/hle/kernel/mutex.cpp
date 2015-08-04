@@ -7,7 +7,7 @@
 
 #include <boost/range/algorithm_ext/erase.hpp>
 
-#include "common/common.h"
+#include "common/assert.h"
 
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/mutex.h"
@@ -23,12 +23,7 @@ static void ResumeWaitingThread(Mutex* mutex) {
     // Reset mutex lock thread handle, nothing is waiting
     mutex->lock_count = 0;
     mutex->holding_thread = nullptr;
-
-    // Find the next waiting thread for the mutex...
-    auto next_thread = mutex->WakeupNextThread();
-    if (next_thread != nullptr) {
-        mutex->Acquire(next_thread);
-    }
+    mutex->WakeupAllWaitingThreads();
 }
 
 void ReleaseThreadMutexes(Thread* thread) {

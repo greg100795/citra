@@ -2,6 +2,8 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#include "common/logging/log.h"
+
 #include "core/hle/hle.h"
 #include "core/hle/service/srv.h"
 #include "core/hle/kernel/event.h"
@@ -64,6 +66,10 @@ const Interface::FunctionInfo FunctionTable[] = {
 
 Interface::Interface() {
     Register(FunctionTable);
+}
+
+Interface::~Interface() {
+    event_handle = nullptr;
 }
 
 } // namespace

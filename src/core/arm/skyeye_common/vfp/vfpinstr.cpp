@@ -13,10 +13,10 @@
 /* VMLA */
 /* cond 1110 0D00 Vn-- Vd-- 101X N0M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmla_inst {
+struct vmla_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vmla_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmla)(unsigned int inst, int index)
@@ -24,10 +24,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmla)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmla_inst));
     vmla_inst *inst_cream = (vmla_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -52,7 +51,7 @@ VMLA_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmla_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -63,10 +62,10 @@ VMLA_INST:
 /* VNMLS */
 /* cond 1110 0D00 Vn-- Vd-- 101X N1M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmls_inst {
+struct vmls_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vmls_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmls)(unsigned int inst, int index)
@@ -74,10 +73,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmls)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmls_inst));
     vmls_inst *inst_cream = (vmls_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -102,7 +100,7 @@ VMLS_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmls_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -113,10 +111,10 @@ VMLS_INST:
 /* VNMLA */
 /* cond 1110 0D01 Vn-- Vd-- 101X N1M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vnmla_inst {
+struct vnmla_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vnmla_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vnmla)(unsigned int inst, int index)
@@ -124,10 +122,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vnmla)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vnmla_inst));
     vnmla_inst *inst_cream = (vnmla_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -152,7 +149,7 @@ VNMLA_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vnmla_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -164,10 +161,10 @@ VNMLA_INST:
 /* cond 1110 0D01 Vn-- Vd-- 101X N0M0 Vm-- */
 
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vnmls_inst {
+struct vnmls_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vnmls_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vnmls)(unsigned int inst, int index)
@@ -175,10 +172,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vnmls)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vnmls_inst));
     vnmls_inst *inst_cream = (vnmls_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -203,7 +199,7 @@ VNMLS_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vnmls_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -214,10 +210,10 @@ VNMLS_INST:
 /* VNMUL */
 /* cond 1110 0D10 Vn-- Vd-- 101X N0M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vnmul_inst {
+struct vnmul_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vnmul_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vnmul)(unsigned int inst, int index)
@@ -225,10 +221,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vnmul)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vnmul_inst));
     vnmul_inst *inst_cream = (vnmul_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -253,7 +248,7 @@ VNMUL_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vnmul_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -264,10 +259,10 @@ VNMUL_INST:
 /* VMUL */
 /* cond 1110 0D10 Vn-- Vd-- 101X N0M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmul_inst {
+struct vmul_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vmul_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmul)(unsigned int inst, int index)
@@ -275,10 +270,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmul)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmul_inst));
     vmul_inst *inst_cream = (vmul_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -303,7 +297,7 @@ VMUL_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmul_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -314,10 +308,10 @@ VMUL_INST:
 /* VADD */
 /* cond 1110 0D11 Vn-- Vd-- 101X N0M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vadd_inst {
+struct vadd_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vadd_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vadd)(unsigned int inst, int index)
@@ -325,10 +319,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vadd)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vadd_inst));
     vadd_inst *inst_cream = (vadd_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -353,7 +346,7 @@ VADD_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vadd_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -364,10 +357,10 @@ VADD_INST:
 /* VSUB */
 /* cond 1110 0D11 Vn-- Vd-- 101X N1M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vsub_inst {
+struct vsub_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vsub_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vsub)(unsigned int inst, int index)
@@ -375,10 +368,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vsub)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vsub_inst));
     vsub_inst *inst_cream = (vsub_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -403,7 +395,7 @@ VSUB_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vsub_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -414,10 +406,10 @@ VSUB_INST:
 /* VDIV */
 /* cond 1110 1D00 Vn-- Vd-- 101X N0M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vdiv_inst {
+struct vdiv_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vdiv_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vdiv)(unsigned int inst, int index)
@@ -425,10 +417,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vdiv)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vdiv_inst));
     vdiv_inst *inst_cream = (vdiv_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -453,7 +444,7 @@ VDIV_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vdiv_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -465,11 +456,11 @@ VDIV_INST:
 /* cond 1110 1D11 im4H Vd-- 101X 0000 im4L */
 /* cond 1110 opc1 CRn- CRd- copr op20 CRm- CDP */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmovi_inst {
+struct vmovi_inst {
     unsigned int single;
     unsigned int d;
     unsigned int imm;
-} vmovi_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovi)(unsigned int inst, int index)
@@ -477,10 +468,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovi)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmovi_inst));
     vmovi_inst *inst_cream = (vmovi_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single = BIT(inst, 8) == 0;
     inst_cream->d      = (inst_cream->single ? BITS(inst,12,15)<<1 | BIT(inst,22) : BITS(inst,12,15) | BIT(inst,22)<<4);
@@ -502,7 +492,7 @@ VMOVI_INST:
 
         VMOVI(cpu, inst_cream->single, inst_cream->d, inst_cream->imm);
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmovi_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -514,11 +504,11 @@ VMOVI_INST:
 /* cond 1110 1D11 0000 Vd-- 101X 01M0 Vm-- */
 /* cond 1110 opc1 CRn- CRd- copr op20 CRm- CDP */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmovr_inst {
+struct vmovr_inst {
     unsigned int single;
     unsigned int d;
     unsigned int m;
-} vmovr_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovr)(unsigned int inst, int index)
@@ -526,10 +516,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovr)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmovr_inst));
     vmovr_inst *inst_cream = (vmovr_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single = BIT(inst, 8) == 0;
     inst_cream->d      = (inst_cream->single ? BITS(inst,12,15)<<1 | BIT(inst,22) : BITS(inst,12,15) | BIT(inst,22)<<4);
@@ -547,7 +536,7 @@ VMOVR_INST:
 
         VMOVR(cpu, inst_cream->single, inst_cream->d, inst_cream->m);
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmovr_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -569,10 +558,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vabs)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vabs_inst));
     vabs_inst *inst_cream = (vabs_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -597,7 +585,7 @@ VABS_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vabs_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -609,10 +597,10 @@ VABS_INST:
 /* cond 1110 1D11 0001 Vd-- 101X 11M0 Vm-- */
 
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vneg_inst {
+struct vneg_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vneg_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vneg)(unsigned int inst, int index)
@@ -620,10 +608,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vneg)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vneg_inst));
     vneg_inst *inst_cream = (vneg_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -648,7 +635,7 @@ VNEG_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vneg_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -659,10 +646,10 @@ VNEG_INST:
 /* VSQRT */
 /* cond 1110 1D11 0001 Vd-- 101X 11M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vsqrt_inst {
+struct vsqrt_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vsqrt_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vsqrt)(unsigned int inst, int index)
@@ -670,10 +657,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vsqrt)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vsqrt_inst));
     vsqrt_inst *inst_cream = (vsqrt_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -698,7 +684,7 @@ VSQRT_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vsqrt_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -709,10 +695,10 @@ VSQRT_INST:
 /* VCMP VCMPE */
 /* cond 1110 1D11 0100 Vd-- 101X E1M0 Vm-- Encoding 1 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vcmp_inst {
+struct vcmp_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vcmp_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vcmp)(unsigned int inst, int index)
@@ -720,10 +706,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vcmp)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vcmp_inst));
     vcmp_inst *inst_cream = (vcmp_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -748,7 +733,7 @@ VCMP_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vcmp_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -759,10 +744,10 @@ VCMP_INST:
 /* VCMP VCMPE */
 /* cond 1110 1D11 0100 Vd-- 101X E1M0 Vm-- Encoding 2 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vcmp2_inst {
+struct vcmp2_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vcmp2_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vcmp2)(unsigned int inst, int index)
@@ -770,10 +755,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vcmp2)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vcmp2_inst));
     vcmp2_inst *inst_cream = (vcmp2_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -798,7 +782,7 @@ VCMP2_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vcmp2_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -809,10 +793,10 @@ VCMP2_INST:
 /* VCVTBDS between double and single */
 /* cond 1110 1D11 0111 Vd-- 101X 11M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vcvtbds_inst {
+struct vcvtbds_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vcvtbds_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vcvtbds)(unsigned int inst, int index)
@@ -820,10 +804,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vcvtbds)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vcvtbds_inst));
     vcvtbds_inst *inst_cream = (vcvtbds_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -848,7 +831,7 @@ VCVTBDS_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vcvtbds_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -859,10 +842,10 @@ VCVTBDS_INST:
 /* VCVTBFF between floating point and fixed point */
 /* cond 1110 1D11 1op2 Vd-- 101X X1M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vcvtbff_inst {
+struct vcvtbff_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vcvtbff_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vcvtbff)(unsigned int inst, int index)
@@ -872,10 +855,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vcvtbff)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vcvtbff_inst));
     vcvtbff_inst *inst_cream = (vcvtbff_inst *)inst_base->component;
 
-    inst_base->cond  = BITS(inst, 28, 31);
-    inst_base->idx     = index;
-    inst_base->br     = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -900,7 +882,7 @@ VCVTBFF_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vcvtbff_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -911,10 +893,10 @@ VCVTBFF_INST:
 /* VCVTBFI between floating point and integer */
 /* cond 1110 1D11 1op2 Vd-- 101X X1M0 Vm-- */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vcvtbfi_inst {
+struct vcvtbfi_inst {
     unsigned int instr;
     unsigned int dp_operation;
-} vcvtbfi_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vcvtbfi)(unsigned int inst, int index)
@@ -922,10 +904,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vcvtbfi)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vcvtbfi_inst));
     vcvtbfi_inst *inst_cream = (vcvtbfi_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->dp_operation = BIT(inst, 8);
     inst_cream->instr = inst;
@@ -950,7 +931,7 @@ VCVTBFI_INST:
 
         CHECK_VFP_CDP_RET;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vcvtbfi_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -967,11 +948,11 @@ VCVTBFI_INST:
 /* cond 1110 000o Vn-- Rt-- 1010 N001 0000 */
 /* cond 1110 op11 CRn- Rt-- copr op21 CRm- MRC */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmovbrs_inst {
+struct vmovbrs_inst {
     unsigned int to_arm;
     unsigned int t;
     unsigned int n;
-} vmovbrs_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrs)(unsigned int inst, int index)
@@ -979,10 +960,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrs)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmovbrs_inst));
     vmovbrs_inst *inst_cream = (vmovbrs_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->to_arm = BIT(inst, 20) == 1;
     inst_cream->t      = BITS(inst, 12, 15);
@@ -1001,7 +981,7 @@ VMOVBRS_INST:
 
         VMOVBRS(cpu, inst_cream->to_arm, inst_cream->t, inst_cream->n, &(cpu->Reg[inst_cream->t]));
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmovbrs_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1013,10 +993,10 @@ VMOVBRS_INST:
 /* cond 1110 1110 reg- Rt-- 1010 0001 0000 */
 /* cond 1110 op10 CRn- Rt-- copr op21 CRm- MCR */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmsr_inst {
+struct vmsr_inst {
     unsigned int reg;
-    unsigned int Rd;
-} vmsr_inst;
+    unsigned int Rt;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmsr)(unsigned int inst, int index)
@@ -1024,13 +1004,12 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmsr)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmsr_inst));
     vmsr_inst *inst_cream = (vmsr_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->reg = BITS(inst, 16, 19);
-    inst_cream->Rd  = BITS(inst, 12, 15);
+    inst_cream->Rt  = BITS(inst, 12, 15);
 
     return inst_base;
 }
@@ -1038,17 +1017,32 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmsr)(unsigned int inst, int index)
 #ifdef VFP_INTERPRETER_IMPL
 VMSR_INST:
 {
-    if ((inst_base->cond == 0xe) || CondPassed(cpu, inst_base->cond)) {
+    if (inst_base->cond == 0xE || CondPassed(cpu, inst_base->cond)) {
         /* FIXME: special case for access to FPSID and FPEXC, VFP must be disabled ,
-           and in privilegied mode */
+           and in privileged mode */
         /* Exceptions must be checked, according to v7 ref manual */
         CHECK_VFP_ENABLED;
 
-        vmsr_inst *inst_cream = (vmsr_inst *)inst_base->component;
+        vmsr_inst* const inst_cream = (vmsr_inst*)inst_base->component;
 
-        VMSR(cpu, inst_cream->reg, inst_cream->Rd);
+        unsigned int reg = inst_cream->reg;
+        unsigned int rt  = inst_cream->Rt;
+
+        if (reg == 1)
+        {
+            cpu->VFP[VFP_FPSCR] = cpu->Reg[rt];
+        }
+        else if (cpu->InAPrivilegedMode())
+        {
+            if (reg == 8)
+                cpu->VFP[VFP_FPEXC] = cpu->Reg[rt];
+            else if (reg == 9)
+                cpu->VFP[VFP_FPINST] = cpu->Reg[rt];
+            else if (reg == 10)
+                cpu->VFP[VFP_FPINST2] = cpu->Reg[rt];
+        }
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmsr_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1060,12 +1054,12 @@ VMSR_INST:
 /* cond 1110 0XX0 Vd-- Rt-- 1011 DXX1 0000 */
 /* cond 1110 op10 CRn- Rt-- copr op21 CRm- MCR */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmovbrc_inst {
+struct vmovbrc_inst {
     unsigned int esize;
     unsigned int index;
     unsigned int d;
     unsigned int t;
-} vmovbrc_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrc)(unsigned int inst, int index)
@@ -1073,10 +1067,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrc)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmovbrc_inst));
     vmovbrc_inst *inst_cream = (vmovbrc_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->d     = BITS(inst, 16, 19)|BIT(inst, 7)<<4;
     inst_cream->t     = BITS(inst, 12, 15);
@@ -1090,14 +1083,14 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrc)(unsigned int inst, int index)
 #ifdef VFP_INTERPRETER_IMPL
 VMOVBRC_INST:
 {
-    if ((inst_base->cond == 0xe) || CondPassed(cpu, inst_base->cond)) {
+    if (inst_base->cond == 0xE || CondPassed(cpu, inst_base->cond)) {
         CHECK_VFP_ENABLED;
 
-        vmovbrc_inst *inst_cream = (vmovbrc_inst *)inst_base->component;
+        vmovbrc_inst* const inst_cream = (vmovbrc_inst*)inst_base->component;
 
-        VFP_DEBUG_UNIMPLEMENTED(VMOVBRC);
+        cpu->ExtReg[(2 * inst_cream->d) + inst_cream->index] = cpu->Reg[inst_cream->t];
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmovbrc_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1109,10 +1102,10 @@ VMOVBRC_INST:
 /* cond 1110 1111 CRn- Rt-- 1010 0001 0000 */
 /* cond 1110 op11 CRn- Rt-- copr op21 CRm- MRC */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmrs_inst {
+struct vmrs_inst {
     unsigned int reg;
     unsigned int Rt;
-} vmrs_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmrs)(unsigned int inst, int index)
@@ -1120,10 +1113,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmrs)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmrs_inst));
     vmrs_inst *inst_cream = (vmrs_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->reg = BITS(inst, 16, 19);
     inst_cream->Rt  = BITS(inst, 12, 15);
@@ -1134,19 +1126,22 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmrs)(unsigned int inst, int index)
 #ifdef VFP_INTERPRETER_IMPL
 VMRS_INST:
 {
-    if ((inst_base->cond == 0xe) || CondPassed(cpu, inst_base->cond)) {
+    if (inst_base->cond == 0xE || CondPassed(cpu, inst_base->cond)) {
         /* FIXME: special case for access to FPSID and FPEXC, VFP must be disabled,
-           and in privilegied mode */
+           and in privileged mode */
         /* Exceptions must be checked, according to v7 ref manual */
         CHECK_VFP_ENABLED;
 
-        vmrs_inst *inst_cream = (vmrs_inst *)inst_base->component;
+        vmrs_inst* const inst_cream = (vmrs_inst*)inst_base->component;
 
-        if (inst_cream->reg == 1) /* FPSCR */
+        unsigned int reg = inst_cream->reg;
+        unsigned int rt  = inst_cream->Rt;
+
+        if (reg == 1) // FPSCR
         {
-            if (inst_cream->Rt != 15)
+            if (rt != 15)
             {
-                cpu->Reg[inst_cream->Rt] = cpu->VFP[VFP_FPSCR];
+                cpu->Reg[rt] = cpu->VFP[VFP_FPSCR];
             }
             else
             {
@@ -1156,30 +1151,29 @@ VMRS_INST:
                 cpu->VFlag = (cpu->VFP[VFP_FPSCR] >> 28) & 1;
             }
         }
-        else
+        else if (reg == 0)
         {
-            switch (inst_cream->reg)
-            {
-            case 0:
-                cpu->Reg[inst_cream->Rt] = cpu->VFP[VFP_FPSID];
-                break;
-            case 6:
-                /* MVFR1, VFPv3 only ? */
-                LOG_TRACE(Core_ARM11, "\tr%d <= MVFR1 unimplemented\n", inst_cream->Rt);
-                break;
-            case 7:
-                /* MVFR0, VFPv3 only? */
-                LOG_TRACE(Core_ARM11, "\tr%d <= MVFR0 unimplemented\n", inst_cream->Rt);
-                break;
-            case 8:
-                cpu->Reg[inst_cream->Rt] = cpu->VFP[VFP_FPEXC];
-                break;
-            default:
-                break;
-            }
+            cpu->Reg[rt] = cpu->VFP[VFP_FPSID];
+        }
+        else if (reg == 6)
+        {
+            cpu->Reg[rt] = cpu->VFP[VFP_MVFR1];
+        }
+        else if (reg == 7)
+        {
+            cpu->Reg[rt] = cpu->VFP[VFP_MVFR0];
+        }
+        else if (cpu->InAPrivilegedMode())
+        {
+            if (reg == 8)
+                cpu->Reg[rt] = cpu->VFP[VFP_FPEXC];
+            else if (reg == 9)
+                cpu->Reg[rt] = cpu->VFP[VFP_FPINST];
+            else if (reg == 10)
+                cpu->Reg[rt] = cpu->VFP[VFP_FPINST2];
         }
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmrs_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1191,12 +1185,12 @@ VMRS_INST:
 /* cond 1110 XXX1 Vd-- Rt-- 1011 NXX1 0000 */
 /* cond 1110 op11 CRn- Rt-- copr op21 CRm- MCR */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmovbcr_inst {
+struct vmovbcr_inst {
     unsigned int esize;
     unsigned int index;
     unsigned int d;
     unsigned int t;
-} vmovbcr_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbcr)(unsigned int inst, int index)
@@ -1204,10 +1198,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbcr)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmovbcr_inst));
     vmovbcr_inst *inst_cream = (vmovbcr_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->d     = BITS(inst, 16, 19)|BIT(inst, 7)<<4;
     inst_cream->t     = BITS(inst, 12, 15);
@@ -1221,14 +1214,14 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbcr)(unsigned int inst, int index)
 #ifdef VFP_INTERPRETER_IMPL
 VMOVBCR_INST:
 {
-    if ((inst_base->cond == 0xe) || CondPassed(cpu, inst_base->cond)) {
+    if (inst_base->cond == 0xE || CondPassed(cpu, inst_base->cond)) {
         CHECK_VFP_ENABLED;
 
-        vmovbcr_inst *inst_cream = (vmovbcr_inst *)inst_base->component;
+        vmovbcr_inst* const inst_cream = (vmovbcr_inst*) inst_base->component;
 
-        VFP_DEBUG_UNIMPLEMENTED(VMOVBCR);
+        cpu->Reg[inst_cream->t] = cpu->ExtReg[(2 * inst_cream->d) + inst_cream->index];
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmovbcr_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1245,12 +1238,12 @@ VMOVBCR_INST:
 /* cond 1100 010X Rt2- Rt-- 1010 00X1 Vm-- */
 /* cond 1100 0101 Rt2- Rt-- copr opc1 CRm- MRRC */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmovbrrss_inst {
+struct vmovbrrss_inst {
     unsigned int to_arm;
     unsigned int t;
     unsigned int t2;
     unsigned int m;
-} vmovbrrss_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrrss)(unsigned int inst, int index)
@@ -1258,10 +1251,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrrss)(unsigned int inst, int inde
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmovbrrss_inst));
     vmovbrrss_inst *inst_cream = (vmovbrrss_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->to_arm = BIT(inst, 20) == 1;
     inst_cream->t      = BITS(inst, 12, 15);
@@ -1282,7 +1274,7 @@ VMOVBRRSS_INST:
         VMOVBRRSS(cpu, inst_cream->to_arm, inst_cream->t, inst_cream->t2, inst_cream->m,
             &cpu->Reg[inst_cream->t], &cpu->Reg[inst_cream->t2]);
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmovbrrss_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1294,12 +1286,12 @@ VMOVBRRSS_INST:
 /* cond 1100 010X Rt2- Rt-- 1011 00X1 Vm-- */
 /* cond 1100 0101 Rt2- Rt-- copr opc1 CRm- MRRC */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vmovbrrd_inst {
+struct vmovbrrd_inst {
     unsigned int to_arm;
     unsigned int t;
     unsigned int t2;
     unsigned int m;
-} vmovbrrd_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrrd)(unsigned int inst, int index)
@@ -1307,10 +1299,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vmovbrrd)(unsigned int inst, int index
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vmovbrrd_inst));
     vmovbrrd_inst *inst_cream = (vmovbrrd_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->to_arm = BIT(inst, 20) == 1;
     inst_cream->t      = BITS(inst, 12, 15);
@@ -1331,7 +1322,7 @@ VMOVBRRD_INST:
         VMOVBRRD(cpu, inst_cream->to_arm, inst_cream->t, inst_cream->t2, inst_cream->m,
             &(cpu->Reg[inst_cream->t]), &(cpu->Reg[inst_cream->t2]));
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vmovbrrd_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1347,13 +1338,13 @@ VMOVBRRD_INST:
 /* VSTR */
 /* cond 1101 UD00 Rn-- Vd-- 101X imm8 imm8 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vstr_inst {
+struct vstr_inst {
     unsigned int single;
     unsigned int n;
     unsigned int d;
     unsigned int imm32;
     unsigned int add;
-} vstr_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vstr)(unsigned int inst, int index)
@@ -1361,10 +1352,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vstr)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vstr_inst));
     vstr_inst *inst_cream = (vstr_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single = BIT(inst, 8) == 0;
     inst_cream->add    = BIT(inst, 23);
@@ -1388,23 +1378,23 @@ VSTR_INST:
 
         if (inst_cream->single)
         {
-            WriteMemory32(cpu, addr, cpu->ExtReg[inst_cream->d]);
+            cpu->WriteMemory32(addr, cpu->ExtReg[inst_cream->d]);
         }
         else
         {
             const u32 word1 = cpu->ExtReg[inst_cream->d*2+0];
             const u32 word2 = cpu->ExtReg[inst_cream->d*2+1];
 
-            if (InBigEndianMode(cpu)) {
-                WriteMemory32(cpu, addr + 0, word2);
-                WriteMemory32(cpu, addr + 4, word1);
+            if (cpu->InBigEndianMode()) {
+                cpu->WriteMemory32(addr + 0, word2);
+                cpu->WriteMemory32(addr + 4, word1);
             } else {
-                WriteMemory32(cpu, addr + 0, word1);
-                WriteMemory32(cpu, addr + 4, word2);
+                cpu->WriteMemory32(addr + 0, word1);
+                cpu->WriteMemory32(addr + 4, word2);
             }
         }
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vstr_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1415,12 +1405,12 @@ VSTR_INST:
 /* VPUSH */
 /* cond 1101 0D10 1101 Vd-- 101X imm8 imm8 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vpush_inst {
+struct vpush_inst {
     unsigned int single;
     unsigned int d;
     unsigned int imm32;
     unsigned int regs;
-} vpush_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vpush)(unsigned int inst, int index)
@@ -1428,10 +1418,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vpush)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vpush_inst));
     vpush_inst *inst_cream = (vpush_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single  = BIT(inst, 8) == 0;
     inst_cream->d       = (inst_cream->single ? BITS(inst, 12, 15)<<1|BIT(inst, 22) : BITS(inst, 12, 15)|BIT(inst, 22)<<4);
@@ -1455,7 +1444,7 @@ VPUSH_INST:
         {
             if (inst_cream->single)
             {
-                WriteMemory32(cpu, addr, cpu->ExtReg[inst_cream->d+i]);
+                cpu->WriteMemory32(addr, cpu->ExtReg[inst_cream->d+i]);
                 addr += 4;
             }
             else
@@ -1463,12 +1452,12 @@ VPUSH_INST:
                 const u32 word1 = cpu->ExtReg[(inst_cream->d+i)*2+0];
                 const u32 word2 = cpu->ExtReg[(inst_cream->d+i)*2+1];
 
-                if (InBigEndianMode(cpu)) {
-                    WriteMemory32(cpu, addr + 0, word2);
-                    WriteMemory32(cpu, addr + 4, word1);
+                if (cpu->InBigEndianMode()) {
+                    cpu->WriteMemory32(addr + 0, word2);
+                    cpu->WriteMemory32(addr + 4, word1);
                 } else {
-                    WriteMemory32(cpu, addr + 0, word1);
-                    WriteMemory32(cpu, addr + 4, word2);
+                    cpu->WriteMemory32(addr + 0, word1);
+                    cpu->WriteMemory32(addr + 4, word2);
                 }
 
                 addr += 8;
@@ -1477,7 +1466,7 @@ VPUSH_INST:
 
         cpu->Reg[R13] -= inst_cream->imm32;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vpush_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1488,7 +1477,7 @@ VPUSH_INST:
 /* VSTM */
 /* cond 110P UDW0 Rn-- Vd-- 101X imm8 imm8 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vstm_inst {
+struct vstm_inst {
     unsigned int single;
     unsigned int add;
     unsigned int wback;
@@ -1496,7 +1485,7 @@ typedef struct _vstm_inst {
     unsigned int n;
     unsigned int imm32;
     unsigned int regs;
-} vstm_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vstm)(unsigned int inst, int index)
@@ -1504,10 +1493,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vstm)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vstm_inst));
     vstm_inst *inst_cream = (vstm_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single = BIT(inst, 8) == 0;
     inst_cream->add    = BIT(inst, 23);
@@ -1523,37 +1511,44 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vstm)(unsigned int inst, int index)
 #ifdef VFP_INTERPRETER_IMPL
 VSTM_INST: /* encoding 1 */
 {
-    if ((inst_base->cond == 0xe) || CondPassed(cpu, inst_base->cond)) {
+    if (inst_base->cond == 0xE || CondPassed(cpu, inst_base->cond)) {
         CHECK_VFP_ENABLED;
 
-        vstm_inst *inst_cream = (vstm_inst *)inst_base->component;
+        vstm_inst* inst_cream = (vstm_inst*)inst_base->component;
 
-        addr = (inst_cream->add ? cpu->Reg[inst_cream->n] : cpu->Reg[inst_cream->n] - inst_cream->imm32);
+        u32 address = cpu->Reg[inst_cream->n];
+
+        // Only possible in ARM mode, where PC accesses have an 8 byte offset.
+        if (inst_cream->n == 15)
+            address += 8;
+
+        if (inst_cream->add == 0)
+            address -= inst_cream->imm32;
 
         for (unsigned int i = 0; i < inst_cream->regs; i++)
         {
             if (inst_cream->single)
             {
-                WriteMemory32(cpu, addr, cpu->ExtReg[inst_cream->d+i]);
-                addr += 4;
+                cpu->WriteMemory32(address, cpu->ExtReg[inst_cream->d+i]);
+                address += 4;
             }
             else
             {
                 const u32 word1 = cpu->ExtReg[(inst_cream->d+i)*2+0];
                 const u32 word2 = cpu->ExtReg[(inst_cream->d+i)*2+1];
 
-                if (InBigEndianMode(cpu)) {
-                    WriteMemory32(cpu, addr + 0, word2);
-                    WriteMemory32(cpu, addr + 4, word1);
+                if (cpu->InBigEndianMode()) {
+                    cpu->WriteMemory32(address + 0, word2);
+                    cpu->WriteMemory32(address + 4, word1);
                 } else {
-                    WriteMemory32(cpu, addr + 0, word1);
-                    WriteMemory32(cpu, addr + 4, word2);
+                    cpu->WriteMemory32(address + 0, word1);
+                    cpu->WriteMemory32(address + 4, word2);
                 }
 
-                addr += 8;
+                address += 8;
             }
         }
-        if (inst_cream->wback){
+        if (inst_cream->wback) {
             cpu->Reg[inst_cream->n] = (inst_cream->add ? cpu->Reg[inst_cream->n] + inst_cream->imm32 :
                 cpu->Reg[inst_cream->n] - inst_cream->imm32);
         }
@@ -1570,12 +1565,12 @@ VSTM_INST: /* encoding 1 */
 /* VPOP */
 /* cond 1100 1D11 1101 Vd-- 101X imm8 imm8 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vpop_inst {
+struct vpop_inst {
     unsigned int single;
     unsigned int d;
     unsigned int imm32;
     unsigned int regs;
-} vpop_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vpop)(unsigned int inst, int index)
@@ -1583,10 +1578,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vpop)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vpop_inst));
     vpop_inst *inst_cream = (vpop_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single  = BIT(inst, 8) == 0;
     inst_cream->d       = (inst_cream->single ? (BITS(inst, 12, 15)<<1)|BIT(inst, 22) : BITS(inst, 12, 15)|(BIT(inst, 22)<<4));
@@ -1610,15 +1604,15 @@ VPOP_INST:
         {
             if (inst_cream->single)
             {
-                cpu->ExtReg[inst_cream->d+i] = ReadMemory32(cpu, addr);
+                cpu->ExtReg[inst_cream->d+i] = cpu->ReadMemory32(addr);
                 addr += 4;
             }
             else
             {
-                const u32 word1 = ReadMemory32(cpu, addr + 0);
-                const u32 word2 = ReadMemory32(cpu, addr + 4);
+                const u32 word1 = cpu->ReadMemory32(addr + 0);
+                const u32 word2 = cpu->ReadMemory32(addr + 4);
 
-                if (InBigEndianMode(cpu)) {
+                if (cpu->InBigEndianMode()) {
                     cpu->ExtReg[(inst_cream->d+i)*2+0] = word2;
                     cpu->ExtReg[(inst_cream->d+i)*2+1] = word1;
                 } else {
@@ -1631,7 +1625,7 @@ VPOP_INST:
         }
         cpu->Reg[R13] += inst_cream->imm32;
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vpop_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1643,13 +1637,13 @@ VPOP_INST:
 /* VLDR */
 /* cond 1101 UD01 Rn-- Vd-- 101X imm8 imm8 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vldr_inst {
+struct vldr_inst {
     unsigned int single;
     unsigned int n;
     unsigned int d;
     unsigned int imm32;
     unsigned int add;
-} vldr_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vldr)(unsigned int inst, int index)
@@ -1657,10 +1651,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vldr)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vldr_inst));
     vldr_inst *inst_cream = (vldr_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single = BIT(inst, 8) == 0;
     inst_cream->add    = BIT(inst, 23);
@@ -1684,14 +1677,14 @@ VLDR_INST:
 
         if (inst_cream->single)
         {
-            cpu->ExtReg[inst_cream->d] = ReadMemory32(cpu, addr);
+            cpu->ExtReg[inst_cream->d] = cpu->ReadMemory32(addr);
         }
         else
         {
-            const u32 word1 = ReadMemory32(cpu, addr + 0);
-            const u32 word2 = ReadMemory32(cpu, addr + 4);
+            const u32 word1 = cpu->ReadMemory32(addr + 0);
+            const u32 word2 = cpu->ReadMemory32(addr + 4);
 
-            if (InBigEndianMode(cpu)) {
+            if (cpu->InBigEndianMode()) {
                 cpu->ExtReg[inst_cream->d*2+0] = word2;
                 cpu->ExtReg[inst_cream->d*2+1] = word1;
             } else {
@@ -1700,7 +1693,7 @@ VLDR_INST:
             }
         }
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vldr_inst));
     FETCH_INST;
     GOTO_NEXT_INST;
@@ -1711,7 +1704,7 @@ VLDR_INST:
 /* VLDM */
 /* cond 110P UDW1 Rn-- Vd-- 101X imm8 imm8 */
 #ifdef VFP_INTERPRETER_STRUCT
-typedef struct _vldm_inst {
+struct vldm_inst {
     unsigned int single;
     unsigned int add;
     unsigned int wback;
@@ -1719,7 +1712,7 @@ typedef struct _vldm_inst {
     unsigned int n;
     unsigned int imm32;
     unsigned int regs;
-} vldm_inst;
+};
 #endif
 #ifdef VFP_INTERPRETER_TRANS
 static ARM_INST_PTR INTERPRETER_TRANSLATE(vldm)(unsigned int inst, int index)
@@ -1727,10 +1720,9 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vldm)(unsigned int inst, int index)
     arm_inst *inst_base = (arm_inst *)AllocBuffer(sizeof(arm_inst) + sizeof(vldm_inst));
     vldm_inst *inst_cream = (vldm_inst *)inst_base->component;
 
-    inst_base->cond     = BITS(inst, 28, 31);
-    inst_base->idx      = index;
-    inst_base->br       = NON_BRANCH;
-    inst_base->load_r15 = 0;
+    inst_base->cond = BITS(inst, 28, 31);
+    inst_base->idx  = index;
+    inst_base->br   = NON_BRANCH;
 
     inst_cream->single = BIT(inst, 8) == 0;
     inst_cream->add    = BIT(inst, 23);
@@ -1746,26 +1738,33 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(vldm)(unsigned int inst, int index)
 #ifdef VFP_INTERPRETER_IMPL
 VLDM_INST:
 {
-    if ((inst_base->cond == 0xe) || CondPassed(cpu, inst_base->cond)) {
+    if (inst_base->cond == 0xE || CondPassed(cpu, inst_base->cond)) {
         CHECK_VFP_ENABLED;
 
-        vldm_inst *inst_cream = (vldm_inst *)inst_base->component;
+        vldm_inst* inst_cream = (vldm_inst*)inst_base->component;
 
-        addr = (inst_cream->add ? cpu->Reg[inst_cream->n] : cpu->Reg[inst_cream->n] - inst_cream->imm32);
+        u32 address = cpu->Reg[inst_cream->n];
+
+        // Only possible in ARM mode, where PC accesses have an 8 byte offset.
+        if (inst_cream->n == 15)
+            address += 8;
+
+        if (inst_cream->add == 0)
+            address -= inst_cream->imm32;
 
         for (unsigned int i = 0; i < inst_cream->regs; i++)
         {
             if (inst_cream->single)
             {
-                cpu->ExtReg[inst_cream->d+i] = ReadMemory32(cpu, addr);
-                addr += 4;
+                cpu->ExtReg[inst_cream->d+i] = cpu->ReadMemory32(address);
+                address += 4;
             }
             else
             {
-                const u32 word1 = ReadMemory32(cpu, addr + 0);
-                const u32 word2 = ReadMemory32(cpu, addr + 4);
+                const u32 word1 = cpu->ReadMemory32(address + 0);
+                const u32 word2 = cpu->ReadMemory32(address + 4);
 
-                if (InBigEndianMode(cpu)) {
+                if (cpu->InBigEndianMode()) {
                     cpu->ExtReg[(inst_cream->d+i)*2+0] = word2;
                     cpu->ExtReg[(inst_cream->d+i)*2+1] = word1;
                 } else {
@@ -1773,15 +1772,15 @@ VLDM_INST:
                     cpu->ExtReg[(inst_cream->d+i)*2+1] = word2;
                 }
 
-                addr += 8;
+                address += 8;
             }
         }
-        if (inst_cream->wback){
+        if (inst_cream->wback) {
             cpu->Reg[inst_cream->n] = (inst_cream->add ? cpu->Reg[inst_cream->n] + inst_cream->imm32 :
                 cpu->Reg[inst_cream->n] - inst_cream->imm32);
         }
     }
-    cpu->Reg[15] += GET_INST_SIZE(cpu);
+    cpu->Reg[15] += cpu->GetInstructionSize();
     INC_PC(sizeof(vldm_inst));
     FETCH_INST;
     GOTO_NEXT_INST;

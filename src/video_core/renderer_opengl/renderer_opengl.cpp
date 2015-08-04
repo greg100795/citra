@@ -2,21 +2,27 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+
+#include "common/assert.h"
+#include "common/emu_window.h"
+#include "common/logging/log.h"
+#include "common/profiler_reporting.h"
+
 #include "core/hw/gpu.h"
 #include "core/hw/hw.h"
 #include "core/hw/lcd.h"
-#include "core/mem_map.h"
+#include "core/memory.h"
 #include "core/settings.h"
-
-#include "common/emu_window.h"
-#include "common/profiler_reporting.h"
 
 #include "video_core/video_core.h"
 #include "video_core/renderer_opengl/renderer_opengl.h"
 #include "video_core/renderer_opengl/gl_shader_util.h"
 #include "video_core/renderer_opengl/gl_shaders.h"
 
-#include <algorithm>
+#include "video_core/debug_utils/debug_utils.h"
 
 /**
  * Vertex structure that the drawn screen rectangles are composed of.
@@ -52,6 +58,7 @@ static std::array<GLfloat, 3*2> MakeOrthographicMatrix(const float width, const 
 
 /// RendererOpenGL constructor
 RendererOpenGL::RendererOpenGL() {
+    hw_rasterizer.reset(new RasterizerOpenGL());
     resolution_width  = std::max(VideoCore::kScreenTopWidth, VideoCore::kScreenBottomWidth);
     resolution_height = VideoCore::kScreenTopHeight + VideoCore::kScreenBottomHeight;
 }
@@ -62,7 +69,9 @@ RendererOpenGL::~RendererOpenGL() {
 
 /// Swap buffers (render frame)
 void RendererOpenGL::SwapBuffers() {
-    render_window->MakeCurrent();
+    // Maintain the rasterizer's state as a priority
+    OpenGLState prev_state = OpenGLState::GetCurState();
+    state.Apply();
 
     for(int i : {0, 1}) {
         const auto& framebuffer = GPU::g_regs.framebuffer_config[i];
@@ -109,7 +118,23 @@ void RendererOpenGL::SwapBuffers() {
     render_window->PollEvents();
     render_window->SwapBuffers();
 
+    prev_state.Apply();
+
     profiler.BeginFrame();
+
+    bool hw_renderer_enabled = VideoCore::g_hw_renderer_enabled;
+    if (Settings::values.use_hw_renderer != hw_renderer_enabled) {
+        // TODO: Save new setting value to config file for next startup
+        Settings::values.use_hw_renderer = hw_renderer_enabled;
+
+        if (Settings::values.use_hw_renderer) {
+            hw_rasterizer->Reset();
+        }
+    }
+
+    if (Pica::g_debug_context && Pica::g_debug_context->recorder) {
+        Pica::g_debug_context->recorder->FrameFinished();
+    }
 }
 
 /**
@@ -118,15 +143,15 @@ void RendererOpenGL::SwapBuffers() {
 void RendererOpenGL::LoadFBToActiveGLTexture(const GPU::Regs::FramebufferConfig& framebuffer,
                                              const TextureInfo& texture) {
 
-    const VAddr framebuffer_vaddr = Memory::PhysicalToVirtualAddress(
-        framebuffer.active_fb == 0 ? framebuffer.address_left1 : framebuffer.address_left2);
+    const PAddr framebuffer_addr = framebuffer.active_fb == 0 ?
+            framebuffer.address_left1 : framebuffer.address_left2;
 
     LOG_TRACE(Render_OpenGL, "0x%08x bytes from 0x%08x(%dx%d), fmt %x",
         framebuffer.stride * framebuffer.height,
-        framebuffer_vaddr, (int)framebuffer.width,
+        framebuffer_addr, (int)framebuffer.width,
         (int)framebuffer.height, (int)framebuffer.format);
 
-    const u8* framebuffer_data = Memory::GetPointer(framebuffer_vaddr);
+    const u8* framebuffer_data = Memory::GetPhysicalPointer(framebuffer_addr);
 
     int bpp = GPU::Regs::BytesPerPixel(framebuffer.color_format);
     size_t pixel_stride = framebuffer.stride / bpp;
@@ -138,7 +163,11 @@ void RendererOpenGL::LoadFBToActiveGLTexture(const GPU::Regs::FramebufferConfig&
     // only allows rows to have a memory alignement of 4.
     ASSERT(pixel_stride % 4 == 0);
 
-    glBindTexture(GL_TEXTURE_2D, texture.handle);
+    state.texture_units[0].enabled_2d = true;
+    state.texture_units[0].texture_2d = texture.handle;
+    state.Apply();
+
+    glActiveTexture(GL_TEXTURE0);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)pixel_stride);
 
     // Update existing texture
@@ -150,7 +179,9 @@ void RendererOpenGL::LoadFBToActiveGLTexture(const GPU::Regs::FramebufferConfig&
                     texture.gl_format, texture.gl_type, framebuffer_data);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+
+    state.texture_units[0].texture_2d = 0;
+    state.Apply();
 }
 
 /**
@@ -160,13 +191,15 @@ void RendererOpenGL::LoadFBToActiveGLTexture(const GPU::Regs::FramebufferConfig&
  */
 void RendererOpenGL::LoadColorToActiveGLTexture(u8 color_r, u8 color_g, u8 color_b,
                                                 const TextureInfo& texture) {
-    glBindTexture(GL_TEXTURE_2D, texture.handle);
+    state.texture_units[0].enabled_2d = true;
+    state.texture_units[0].texture_2d = texture.handle;
+    state.Apply();
 
+    glActiveTexture(GL_TEXTURE0);
     u8 framebuffer_data[3] = { color_r, color_g, color_b };
 
     // Update existing texture
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, framebuffer_data);
-    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 /**
@@ -174,7 +207,6 @@ void RendererOpenGL::LoadColorToActiveGLTexture(u8 color_r, u8 color_g, u8 color
  */
 void RendererOpenGL::InitOpenGLObjects() {
     glClearColor(Settings::values.bg_red, Settings::values.bg_green, Settings::values.bg_blue, 0.0f);
-    glDisable(GL_DEPTH_TEST);
 
     // Link shaders and get variable locations
     program_id = ShaderUtil::LoadShaders(GLShaders::g_vertex_shader, GLShaders::g_fragment_shader);
@@ -188,10 +220,12 @@ void RendererOpenGL::InitOpenGLObjects() {
 
     // Generate VAO
     glGenVertexArrays(1, &vertex_array_handle);
-    glBindVertexArray(vertex_array_handle);
+
+    state.draw.vertex_array = vertex_array_handle;
+    state.draw.vertex_buffer = vertex_buffer_handle;
+    state.Apply();
 
     // Attach vertex data to VAO
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_handle);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ScreenRectVertex) * 4, nullptr, GL_STREAM_DRAW);
     glVertexAttribPointer(attrib_position,  2, GL_FLOAT, GL_FALSE, sizeof(ScreenRectVertex), (GLvoid*)offsetof(ScreenRectVertex, position));
     glVertexAttribPointer(attrib_tex_coord, 2, GL_FLOAT, GL_FALSE, sizeof(ScreenRectVertex), (GLvoid*)offsetof(ScreenRectVertex, tex_coord));
@@ -205,14 +239,22 @@ void RendererOpenGL::InitOpenGLObjects() {
         // Allocation of storage is deferred until the first frame, when we
         // know the framebuffer size.
 
-        glBindTexture(GL_TEXTURE_2D, texture.handle);
+        state.texture_units[0].enabled_2d = true;
+        state.texture_units[0].texture_2d = texture.handle;
+        state.Apply();
+
+        glActiveTexture(GL_TEXTURE0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
+
+    state.texture_units[0].texture_2d = 0;
+    state.Apply();
+
+    hw_rasterizer->InitObjects();
 }
 
 void RendererOpenGL::ConfigureFramebufferTexture(TextureInfo& texture,
@@ -263,7 +305,11 @@ void RendererOpenGL::ConfigureFramebufferTexture(TextureInfo& texture,
         UNIMPLEMENTED();
     }
 
-    glBindTexture(GL_TEXTURE_2D, texture.handle);
+    state.texture_units[0].enabled_2d = true;
+    state.texture_units[0].texture_2d = texture.handle;
+    state.Apply();
+
+    glActiveTexture(GL_TEXTURE0);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, texture.width, texture.height, 0,
             texture.gl_format, texture.gl_type, nullptr);
 }
@@ -279,8 +325,10 @@ void RendererOpenGL::DrawSingleScreenRotated(const TextureInfo& texture, float x
         ScreenRectVertex(x+w, y+h, 0.f, 1.f),
     };
 
-    glBindTexture(GL_TEXTURE_2D, texture.handle);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_handle);
+    state.texture_units[0].enabled_2d = true;
+    state.texture_units[0].texture_2d = texture.handle;
+    state.Apply();
+
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices.data());
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
@@ -294,7 +342,8 @@ void RendererOpenGL::DrawScreens() {
     glViewport(0, 0, layout.width, layout.height);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(program_id);
+    state.draw.shader_program = program_id;
+    state.Apply();
 
     // Set projection matrix
     std::array<GLfloat, 3 * 2> ortho_matrix = MakeOrthographicMatrix((float)layout.width,
@@ -336,6 +385,8 @@ void RendererOpenGL::Init() {
     }
 
     LOG_INFO(Render_OpenGL, "GL_VERSION: %s", glGetString(GL_VERSION));
+    LOG_INFO(Render_OpenGL, "GL_VENDOR: %s", glGetString(GL_VENDOR));
+    LOG_INFO(Render_OpenGL, "GL_RENDERER: %s", glGetString(GL_RENDERER));
     InitOpenGLObjects();
 }
 

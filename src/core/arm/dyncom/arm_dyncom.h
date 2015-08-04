@@ -9,7 +9,12 @@
 #include "common/common_types.h"
 
 #include "core/arm/arm_interface.h"
-#include "core/arm/skyeye_common/armdefs.h"
+#include "core/arm/skyeye_common/arm_regformat.h"
+#include "core/arm/skyeye_common/armstate.h"
+
+namespace Core {
+struct ThreadContext;
+}
 
 class ARM_DynCom final : virtual public ARM_Interface {
 public:
@@ -27,7 +32,7 @@ public:
 
     void AddTicks(u64 ticks) override;
 
-    void ResetContext(Core::ThreadContext& context, u32 stack_top, u32 entry_point, u32 arg);
+    void ResetContext(Core::ThreadContext& context, u32 stack_top, u32 entry_point, u32 arg) override;
     void SaveContext(Core::ThreadContext& ctx) override;
     void LoadContext(const Core::ThreadContext& ctx) override;
 

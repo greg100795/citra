@@ -5,9 +5,11 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
-#include "common/common_types.h"
 #include "common/bit_field.h"
+#include "common/common_funcs.h"
+#include "common/common_types.h"
 
 #define LCD_REG_INDEX(field_name) (offsetof(LCD::Regs, field_name) / sizeof(u32))
 
@@ -84,5 +86,5 @@ void Init();
 
 /// Shutdown hardware
 void Shutdown();
-    
+
 } // namespace
